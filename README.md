@@ -47,14 +47,15 @@ Add this loader script to your Tampermonkey. It will automatically fetch the lat
 // ==UserScript==
 // @name         Freecash Progress Loader - DuckyQuack
 // @namespace    freecash-loader-ducky
-// @version      1.2
+// @version      1.2.2
 // @description  Loads DuckyQuack's Freecash progress script from GitHub
 // @author       DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
 // @run-at       document-start
 // @grant        GM_addStyle
-// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/freecash-script
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/freecash/settings.js
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/freecash/main.js
 // ==/UserScript==
 ```
 
