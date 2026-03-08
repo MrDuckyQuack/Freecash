@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.1
-// @description  Settings UI for Freecash Progress Script
+// @version      1.2
+// @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
@@ -439,7 +439,7 @@
         font-size: 1.2em;
       }
 
-      /* Circular Toggle Switch */
+      /* ROUNDED TOGGLE SWITCH - Updated for more rounded appearance */
       .fc-toggle {
         position: relative;
         display: inline-block;
@@ -462,7 +462,7 @@
         bottom: 0;
         background-color: #4b5563;
         transition: .3s;
-        border-radius: 34px;
+        border-radius: 34px; /* More rounded */
         box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
       }
 
@@ -475,7 +475,7 @@
         bottom: 2px;
         background-color: white;
         transition: .3s;
-        border-radius: 50%;
+        border-radius: 50%; /* Perfectly circular */
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       }
 
@@ -563,30 +563,28 @@
         padding-left: 32px;
       }
 
-      .fc-save-btn {
-        width: 100%;
-        padding: 12px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        border: none;
-        border-radius: 10px;
-        color: white;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 10px;
+      /* Remove save button styles and add auto-save indicator */
+      .fc-auto-save-indicator {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        padding: 8px;
+        background: rgba(16,185,129,0.1);
+        border-radius: 30px;
+        margin-top: 15px;
+        font-size: 12px;
+        color: #10b981;
+        border: 1px solid rgba(16,185,129,0.3);
       }
 
-      .fc-save-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(16,185,129,0.4);
+      .fc-auto-save-indicator span {
+        animation: pulse 2s infinite;
       }
 
-      .fc-save-btn:active {
-        transform: translateY(0);
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
       }
 
       .fc-settings-modal-footer {
@@ -623,6 +621,123 @@
       /* Prevent body scroll when modal is open */
       body.fc-modal-open {
         overflow: hidden !important;
+      }
+
+      /* Refresh Notification Styles */
+      .fc-refresh-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(20, 20, 30, 0.98);
+        backdrop-filter: blur(10px);
+        border: 2px solid #10b981;
+        border-radius: 16px;
+        padding: 16px 20px;
+        z-index: 1000000;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(16,185,129,0.3);
+        animation: notificationSlide 0.3s ease;
+        color: white;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        min-width: 280px;
+      }
+
+      .fc-refresh-notification.closing {
+        animation: notificationSlideOut 0.3s ease forwards;
+      }
+
+      @keyframes notificationSlide {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes notificationSlideOut {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+      }
+
+      .fc-refresh-notification-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .fc-refresh-icon {
+        font-size: 24px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      .fc-refresh-text {
+        flex: 1;
+      }
+
+      .fc-refresh-text strong {
+        color: #10b981;
+        display: block;
+        margin-bottom: 4px;
+        font-size: 16px;
+      }
+
+      .fc-refresh-text p {
+        margin: 0;
+        font-size: 13px;
+        color: #d1d5db;
+      }
+
+      .fc-refresh-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .fc-refresh-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+      }
+
+      .fc-refresh-btn.primary {
+        background: #10b981;
+        color: white;
+      }
+
+      .fc-refresh-btn.primary:hover {
+        background: #0d9668;
+        transform: translateY(-2px);
+      }
+
+      .fc-refresh-btn.secondary {
+        background: rgba(255,255,255,0.1);
+        color: white;
+      }
+
+      .fc-refresh-btn.secondary:hover {
+        background: rgba(255,255,255,0.2);
       }
     `);
 
@@ -677,6 +792,116 @@
       updateSpeed: 'normal'
     };
 
+    // Track if settings require refresh
+    let refreshRequired = false;
+    let settingsChanged = false;
+
+    // Function to show refresh notification
+    function showRefreshNotification() {
+      // Remove existing notification if any
+      const existingNotification = document.getElementById('fc-refresh-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+
+      const notification = document.createElement('div');
+      notification.className = 'fc-refresh-notification';
+      notification.id = 'fc-refresh-notification';
+      notification.innerHTML = `
+        <div class="fc-refresh-notification-content">
+          <div class="fc-refresh-icon">🔄</div>
+          <div class="fc-refresh-text">
+            <strong>Settings Updated!</strong>
+            <p>Some changes require a page refresh to take full effect.</p>
+          </div>
+        </div>
+        <div class="fc-refresh-actions">
+          <button class="fc-refresh-btn primary" id="fc-refresh-now">
+            <span>🔄</span> Refresh Now
+          </button>
+          <button class="fc-refresh-btn secondary" id="fc-refresh-later">
+            <span>⏰</span> Later
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+
+      // Refresh now button
+      document.getElementById('fc-refresh-now').addEventListener('click', () => {
+        notification.classList.add('closing');
+        setTimeout(() => {
+          location.reload();
+        }, 300);
+      });
+
+      // Later button
+      document.getElementById('fc-refresh-later').addEventListener('click', () => {
+        notification.classList.add('closing');
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      });
+
+      // Auto-hide after 10 seconds if not interacted with
+      setTimeout(() => {
+        const notif = document.getElementById('fc-refresh-notification');
+        if (notif) {
+          notif.classList.add('closing');
+          setTimeout(() => {
+            if (notif.parentNode) notif.remove();
+          }, 300);
+        }
+      }, 10000);
+    }
+
+    // Auto-save function
+    function autoSaveSettings() {
+      if (!settingsChanged) return;
+      
+      const newConfig = {
+        animationsEnabled: document.getElementById('fc-toggle-animations')?.checked ?? true,
+        numberRollEnabled: document.getElementById('fc-toggle-number-roll')?.checked ?? true,
+        duckDanceEnabled: document.getElementById('fc-toggle-duck-dance')?.checked ?? true,
+        borderPulseEnabled: document.getElementById('fc-toggle-border-pulse')?.checked ?? true,
+        showEmojis: document.getElementById('fc-toggle-emojis')?.checked ?? true,
+        decimalPrecision: parseInt(document.getElementById('fc-slider-precision')?.value ?? '4'),
+        updateSpeed: document.getElementById('fc-select-speed')?.value ?? 'normal'
+      };
+      
+      // Update config in main script
+      if (typeof window.updateConfig === 'function') {
+        window.updateConfig(newConfig);
+        
+        // Show subtle indicator that settings were saved
+        const indicator = document.querySelector('.fc-auto-save-indicator span');
+        if (indicator) {
+          indicator.textContent = '✓ Saved';
+          setTimeout(() => {
+            if (indicator) indicator.textContent = '● Auto-save';
+          }, 2000);
+        }
+        
+        // Check if refresh is needed (for settings that require page reload)
+        const oldPrecision = currentConfig.decimalPrecision;
+        const newPrecision = parseInt(document.getElementById('fc-slider-precision')?.value ?? '4');
+        
+        if (oldPrecision !== newPrecision) {
+          refreshRequired = true;
+        }
+        
+        settingsChanged = false;
+      }
+    }
+
+    // Debounced auto-save
+    let saveTimeout;
+    function triggerAutoSave() {
+      settingsChanged = true;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(autoSaveSettings, 500); // Save 500ms after last change
+    }
+
     // Create modal elements
     const modalOverlay = document.createElement('div');
     modalOverlay.className = 'fc-settings-modal-overlay';
@@ -687,7 +912,7 @@
     modal.className = 'fc-settings-modal';
     modal.id = 'fc-settings-modal';
     
-    // Build modal with tabs
+    // Build modal with tabs - removed save button, added auto-save indicator
     modal.innerHTML = `
       <div class="fc-settings-modal-header">
         <h3>
@@ -800,7 +1025,7 @@
                 <span class="fc-slider-value" id="fc-precision-value">${currentConfig.decimalPrecision}</span>
               </div>
             </div>
-            <div class="fc-setting-description">Number of decimal places to show (0-6)</div>
+            <div class="fc-setting-description">Number of decimal places to show (0-6) - requires refresh</div>
             
             <div class="fc-setting-item">
               <span class="fc-setting-label">
@@ -815,9 +1040,11 @@
             <div class="fc-setting-description">How frequently progress updates (fast may use more CPU)</div>
           </div>
           
-          <button class="fc-save-btn" id="fc-save-settings">
-            <span>💾</span> Save Settings
-          </button>
+          <!-- Auto-save indicator -->
+          <div class="fc-auto-save-indicator">
+            <span>●</span> Auto-save enabled
+            <span>●</span>
+          </div>
         </div>
       </div>
       
@@ -879,7 +1106,7 @@
           <div class="fc-support-card">
             <h4><span>💬</span> Need More Help?</h4>
             
-            <a href="https://discord.gg/freecash" target="_blank" class="fc-discord-link">
+            <a href="https://discord.gg/Y3zZrnEEN4" target="_blank" class="fc-discord-link">
               <span>💬</span>
               <span style="flex: 1;">Join Freecash Discord</span>
               <span>↗</span>
@@ -887,7 +1114,7 @@
             
             <div class="fc-pm-note">
               <strong>📨 DuckyQuack Support:</strong><br>
-              Once you're in the Freecash Discord, send a Private Message to <strong>@DuckyQuack</strong> with:
+              Once you're in the Freecash Discord, send a Private Message to <strong>@real_mr.duck</strong> with:
               <ul style="margin-top: 8px; padding-left: 20px;">
                 <li>A description of your issue</li>
                 <li>Screenshots (if applicable)</li>
@@ -989,46 +1216,38 @@
     }
     
     if (precisionSlider) {
-      precisionSlider.addEventListener('input', updatePrecisionDisplay);
+      precisionSlider.addEventListener('input', () => {
+        updatePrecisionDisplay();
+        triggerAutoSave();
+      });
     }
 
-    // Save settings button
-    const saveBtn = document.getElementById('fc-save-settings');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
-        // Gather all settings
-        const newConfig = {
-          animationsEnabled: document.getElementById('fc-toggle-animations')?.checked ?? true,
-          numberRollEnabled: document.getElementById('fc-toggle-number-roll')?.checked ?? true,
-          duckDanceEnabled: document.getElementById('fc-toggle-duck-dance')?.checked ?? true,
-          borderPulseEnabled: document.getElementById('fc-toggle-border-pulse')?.checked ?? true,
-          showEmojis: document.getElementById('fc-toggle-emojis')?.checked ?? true,
-          decimalPrecision: parseInt(document.getElementById('fc-slider-precision')?.value ?? '4'),
-          updateSpeed: document.getElementById('fc-select-speed')?.value ?? 'normal'
-        };
-        
-        // Update config in main script
-        if (typeof window.updateConfig === 'function') {
-          window.updateConfig(newConfig);
-        }
-        
-        // Show save confirmation
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<span>✅</span> Saved!';
-        saveBtn.style.background = 'linear-gradient(135deg, #059669, #047857)';
-        
-        setTimeout(() => {
-          saveBtn.innerHTML = originalText;
-          saveBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-        }, 2000);
-      });
+    // Add auto-save listeners to all toggles and selects
+    const toggleIds = [
+      'fc-toggle-animations',
+      'fc-toggle-number-roll',
+      'fc-toggle-duck-dance',
+      'fc-toggle-border-pulse',
+      'fc-toggle-emojis'
+    ];
+
+    toggleIds.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.addEventListener('change', triggerAutoSave);
+      }
+    });
+
+    const speedSelect = document.getElementById('fc-select-speed');
+    if (speedSelect) {
+      speedSelect.addEventListener('change', triggerAutoSave);
     }
 
     // Support tab buttons
     const copyUsernameBtn = document.getElementById('fc-copy-username');
     if (copyUsernameBtn) {
       copyUsernameBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText('@DuckyQuack').then(() => {
+        navigator.clipboard.writeText('@real_mr.duck').then(() => {
           const originalText = copyUsernameBtn.innerHTML;
           copyUsernameBtn.innerHTML = '<span>✅</span> Copied!';
           setTimeout(() => {
@@ -1041,7 +1260,7 @@
     const openDiscordBtn = document.getElementById('fc-open-discord');
     if (openDiscordBtn) {
       openDiscordBtn.addEventListener('click', () => {
-        window.open('https://discord.gg/freecash', '_blank');
+        window.open('https://discord.gg/Y3zZrnEEN4', '_blank');
       });
     }
 
@@ -1066,6 +1285,12 @@
       } else {
         modal.classList.add('closing');
         modalOverlay.classList.add('closing');
+        
+        // Show refresh notification if needed
+        if (refreshRequired) {
+          showRefreshNotification();
+          refreshRequired = false;
+        }
         
         setTimeout(() => {
           modal.style.display = 'none';
