@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.2
+// @version      1.7.3
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -380,12 +380,12 @@
 
       .fc-setting-label span { font-size: 1.2em; }
 
-      /* Standard toggle switch */
+      /* Circle toggle */
       .fc-toggle {
         position: relative;
         display: inline-block;
-        width: 44px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
         flex-shrink: 0;
       }
 
@@ -399,28 +399,20 @@
       .fc-toggle-slider {
         position: absolute;
         cursor: pointer;
-        top: 0; left: 0; right: 0; bottom: 0;
+        top: 0; left: 0;
+        width: 32px;
+        height: 32px;
         background-color: #4b5563;
-        transition: background-color 0.2s ease;
-        border-radius: 999px;
-      }
-
-      .fc-toggle-slider::before {
-        content: "";
-        position: absolute;
-        width: 18px;
-        height: 18px;
-        left: 3px;
-        top: 3px;
-        background-color: white;
         border-radius: 50%;
-        transition: transform 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        display: block;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
       }
 
-      .fc-toggle input:checked + .fc-toggle-slider { background-color: #10b981; }
-      .fc-toggle input:checked + .fc-toggle-slider::before { transform: translateX(20px); }
+      .fc-toggle-slider::before { display: none; }
+
+      .fc-toggle input:checked + .fc-toggle-slider {
+        background-color: #10b981;
+        box-shadow: 0 0 8px rgba(16,185,129,0.5);
+      }
 
       /* Select Dropdown */
       .fc-select {
