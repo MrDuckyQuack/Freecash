@@ -140,7 +140,7 @@
     loader.id = 'fc-loader-script';
     loader.innerHTML = `
       <span class="loader-duck">🦆</span>
-      <span class="loader-text">Loading Script</span>
+      <span class="loader-text">Quacking Script</span>
       <span class="loader-dots">
         <span></span><span></span><span></span>
       </span>
