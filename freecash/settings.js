@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.0
+// @version      1.7.1
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -380,12 +380,12 @@
 
       .fc-setting-label span { font-size: 1.2em; }
 
-      /* Toggle – circular track (square aspect ratio) with round knob */
+      /* Standard pill toggle switch */
       .fc-toggle {
         position: relative;
         display: inline-block;
-        width: 28px;       /* same as height → perfect circle track */
-        height: 28px;
+        width: 46px;
+        height: 26px;
         flex-shrink: 0;
       }
 
@@ -397,30 +397,24 @@
         top: 0; left: 0; right: 0; bottom: 0;
         background-color: #4b5563;
         transition: background-color 0.2s ease;
-        border-radius: 50%;           /* circle track */
+        border-radius: 26px;
       }
 
       .fc-toggle-slider::before {
         position: absolute;
         content: "";
-        height: 18px;
-        width: 18px;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        top: 3px;
         background-color: white;
-        transition: background-color 0.2s ease, transform 0.2s ease;
-        border-radius: 50%;           /* circle knob */
-        will-change: transform;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        transition: transform 0.2s ease;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
 
-      /* checked state: green track, knob turns into a tick-like smaller dot */
       .fc-toggle input:checked + .fc-toggle-slider { background-color: #10b981; }
-      .fc-toggle input:checked + .fc-toggle-slider::before {
-        transform: translate(-50%, -50%) scale(0.7);
-        background-color: white;
-      }
+      .fc-toggle input:checked + .fc-toggle-slider::before { transform: translateX(20px); }
 
       /* Select Dropdown */
       .fc-select {
