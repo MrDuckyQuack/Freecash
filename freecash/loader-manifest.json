@@ -1,0 +1,7 @@
+{
+  "scripts": [
+    "settings.js",
+    "loading.js",
+    "main.js"
+  ]
+}
