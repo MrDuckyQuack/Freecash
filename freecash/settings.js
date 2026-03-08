@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.6.5
+// @version      1.6.6
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -12,8 +12,6 @@
 
 (function () {
   'use strict';
-
-  console.log('⚙️ Settings UI loaded');
 
   // Wait for main script to be ready
   function waitForMainScript() {
@@ -701,10 +699,10 @@
     settingsBtn.setAttribute('aria-label', 'Open Settings');
     settingsBtn.setAttribute('title', 'Duckcash Settings');
     
-    // Create gear span with explicit style to ensure white color
+    // Create gear span with explicit white color and no filter
     const gearSpan = document.createElement('span');
     gearSpan.className = 'gear-icon';
-    gearSpan.textContent = '⚙️';
+    gearSpan.innerHTML = '⚙️';
     gearSpan.style.cssText = 'color: white !important; filter: none !important; -webkit-filter: none !important;';
     settingsBtn.appendChild(gearSpan);
     
@@ -731,7 +729,7 @@
           return JSON.parse(savedConfig);
         }
       } catch (e) {
-        console.error('Error loading config from storage:', e);
+        // Silently handle error
       }
       return null;
     }
@@ -1066,27 +1064,20 @@
           showDuckLoading: showDuckLoading
         };
         
-        console.log('💾 Saving main settings:', { showDuckLoading });
-        
         // Save to localStorage
         try {
           localStorage.setItem('freecashProgressConfig', JSON.stringify(newConfig));
-          console.log('✅ Saved to localStorage');
         } catch (e) {
-          console.error('Error saving to localStorage:', e);
+          // Silently handle error
         }
         
         // Update config in main script
         if (typeof window.updateConfig === 'function') {
           window.updateConfig(newConfig);
-          console.log('✅ Called window.updateConfig');
-        } else {
-          console.warn('window.updateConfig not available');
         }
         
         if (window.userConfig) {
           Object.assign(window.userConfig, newConfig);
-          console.log('✅ Updated window.userConfig');
         }
         
         // Dispatch event for loading.js
@@ -1121,27 +1112,20 @@
           updateSpeed: getCachedElement('fc-select-speed')?.value ?? 'normal'
         };
         
-        console.log('💾 Saving settings:', newConfig);
-        
         // Save to localStorage directly as backup
         try {
           localStorage.setItem('freecashProgressConfig', JSON.stringify(newConfig));
-          console.log('✅ Saved to localStorage');
         } catch (e) {
-          console.error('Error saving to localStorage:', e);
+          // Silently handle error
         }
         
         // Update config in main script
         if (typeof window.updateConfig === 'function') {
           window.updateConfig(newConfig);
-          console.log('✅ Called window.updateConfig');
-        } else {
-          console.warn('window.updateConfig not available');
         }
         
         if (window.userConfig) {
           Object.assign(window.userConfig, newConfig);
-          console.log('✅ Updated window.userConfig');
         }
         
         // Dispatch event for loading.js
@@ -1230,8 +1214,6 @@
 
     // Initial load of settings
     loadSettingsIntoUI();
-
-    console.log('⚙️ Settings UI initialized with white gear (FIXED), Main tab matches Performance, and new Themes tab');
   }
 
   // Start waiting for main script
