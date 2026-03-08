@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.8
+// @version      1.9
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -28,25 +28,26 @@
     // Add settings modal styles (optimized)
     GM_addStyle(`
       /* Settings Modal Styles - Optimized */
-      .fc-settings-modal {
-        position: fixed;
-        bottom: 140px;
-        right: 20px;
-        width: 350px;
-        background: rgba(20, 20, 30, 0.98);
-        backdrop-filter: blur(10px);
-        border: 2px solid #10b981;
-        border-radius: 20px;
-        padding: 0;
-        z-index: 999999;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        animation: modalSlideUp 0.2s ease;
-        color: white;
-        font-family: 'Segoe UI', system-ui, sans-serif;
-        overflow: hidden;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-        will-change: transform, opacity;
-      }
+.fc-settings-modal {
+  position: fixed;
+  bottom: 140px;
+  right: 20px;
+  width: 350px;
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid #10b981;
+  border-radius: 20px;
+  padding: 0;
+  z-index: 999999;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: modalSlideUp 0.2s ease;
+  color: white;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  will-change: transform, opacity;
+}
 
       .fc-settings-modal.closing {
         opacity: 0;
@@ -539,19 +540,20 @@
         background: rgba(0,0,0,0.2);
       }
 
-      .fc-settings-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        backdrop-filter: blur(4px);
-        z-index: 999998;
-        animation: fadeIn 0.2s ease;
-        transition: opacity 0.2s ease;
-        will-change: opacity;
-      }
+.fc-settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999998;
+  animation: fadeIn 0.2s ease;
+  transition: opacity 0.2s ease;
+  will-change: opacity;
+}
 
       .fc-settings-modal-overlay.closing {
         opacity: 0;
@@ -565,29 +567,52 @@
       /* Fix for settings button not being blurred */
 .fc-settings-btn,
 button.fc-settings-btn,
-[class*="settings"],
+[class*="settings"] button,
 button:has(> span:contains("⚙️")),
-button:has(svg),
 .fc-settings-button {
+  /* Override any backdrop-filter from parent elements */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   filter: none !important;
   -webkit-filter: none !important;
-  transform: translateZ(0) !important;
-  -webkit-transform: translateZ(0) !important;
-  isolation: isolate !important;
+  
+  /* Ensure it stays above the blur */
   position: relative !important;
   z-index: 1000000 !important;
+  
+  /* Prevent any transparency issues */
+  background: inherit !important;
+  
+  /* Force hardware acceleration */
+  transform: translateZ(0) !important;
+  -webkit-transform: translateZ(0) !important;
+  
+  /* Maintain crisp rendering */
+  image-rendering: crisp-edges !important;
+  -webkit-font-smoothing: antialiased !important;
+  
+  /* Isolate from parent effects */
+  isolation: isolate !important;
 }
 
 body.fc-modal-open .fc-settings-btn,
 body.fc-modal-open button.fc-settings-btn,
-body.fc-modal-open [class*="settings"] {
+body.fc-modal-open [class*="settings"] button,
+body.fc-modal-open .fc-settings-button {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   filter: none !important;
   -webkit-filter: none !important;
-  image-rendering: crisp-edges !important;
+  z-index: 1000000 !important;
+  position: relative !important;
+}
+
+/* Ensure the button's container doesn't interfere */
+body.fc-modal-open div:has(> .fc-settings-btn),
+body.fc-modal-open section:has(> .fc-settings-btn) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
 }
 
     `);
