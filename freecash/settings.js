@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.6.6
+// @version      1.6.7
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -104,16 +104,52 @@
         color: white;
       }
 
-      /* Tab Navigation */
+      /* Tab Navigation - NOW SCROLLABLE AND GRABABLE */
+      .fc-settings-tabs-container {
+        position: relative;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #10b981 rgba(16,185,129,0.1);
+        cursor: grab;
+        user-select: none;
+        background: rgba(0,0,0,0.2);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+
+      .fc-settings-tabs-container:active {
+        cursor: grabbing;
+      }
+
+      .fc-settings-tabs-container::-webkit-scrollbar {
+        height: 4px;
+      }
+
+      .fc-settings-tabs-container::-webkit-scrollbar-track {
+        background: rgba(16,185,129,0.1);
+        border-radius: 4px;
+      }
+
+      .fc-settings-tabs-container::-webkit-scrollbar-thumb {
+        background: #10b981;
+        border-radius: 4px;
+      }
+
+      .fc-settings-tabs-container::-webkit-scrollbar-thumb:hover {
+        background: #059669;
+      }
+
       .fc-settings-tabs {
         display: flex;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        background: rgba(0,0,0,0.2);
+        gap: 4px;
+        padding: 0 4px;
+        min-width: min-content;
       }
 
       .fc-settings-tab {
-        flex: 1;
-        padding: 12px;
+        padding: 12px 16px;
         background: none;
         border: none;
         color: #9ca3af;
@@ -125,6 +161,8 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
+        white-space: nowrap;
+        border-bottom: 3px solid transparent;
       }
 
       .fc-settings-tab:hover {
@@ -133,7 +171,7 @@
 
       .fc-settings-tab.active {
         color: #10b981;
-        border-bottom: 3px solid #10b981;
+        border-bottom-color: #10b981;
       }
 
       /* Tab Content - Optimized scrolling */
@@ -747,18 +785,20 @@
       showDuckLoading: true
     };
 
-    // Build modal with tabs - Added Themes tab
+    // Build modal with tabs - Added scrollable tab container
     modal.innerHTML = `
       <div class="fc-settings-modal-header">
         <h3><span>🦆</span> DuckyQuack Settings</h3>
         <button class="fc-settings-modal-close" id="fc-settings-modal-close">✕</button>
       </div>
       
-      <div class="fc-settings-tabs">
-        <button class="fc-settings-tab active" data-tab="main"><span>🏠</span> Main</button>
-        <button class="fc-settings-tab" data-tab="performance"><span>⚡</span> Performance</button>
-        <button class="fc-settings-tab" data-tab="themes"><span>🎨</span> Themes</button>
-        <button class="fc-settings-tab" data-tab="support"><span>❓</span> Support</button>
+      <div class="fc-settings-tabs-container">
+        <div class="fc-settings-tabs">
+          <button class="fc-settings-tab active" data-tab="main"><span>🏠</span> Main</button>
+          <button class="fc-settings-tab" data-tab="performance"><span>⚡</span> Performance</button>
+          <button class="fc-settings-tab" data-tab="themes"><span>🎨</span> Themes</button>
+          <button class="fc-settings-tab" data-tab="support"><span>❓</span> Support</button>
+        </div>
       </div>
       
       <!-- Main Tab Content -->
@@ -997,6 +1037,69 @@
       });
     }
 
+    // Add grab-to-scroll functionality for tabs
+    function initTabScrolling() {
+      const container = document.querySelector('.fc-settings-tabs-container');
+      const tabs = document.querySelector('.fc-settings-tabs');
+      
+      if (!container || !tabs) return;
+      
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      
+      container.addEventListener('mousedown', (e) => {
+        isDown = true;
+        container.classList.add('active');
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+        container.style.cursor = 'grabbing';
+      });
+      
+      container.addEventListener('mouseleave', () => {
+        isDown = false;
+        container.classList.remove('active');
+        container.style.cursor = 'grab';
+      });
+      
+      container.addEventListener('mouseup', () => {
+        isDown = false;
+        container.classList.remove('active');
+        container.style.cursor = 'grab';
+      });
+      
+      container.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed multiplier
+        container.scrollLeft = scrollLeft - walk;
+      });
+      
+      // Touch support for mobile
+      container.addEventListener('touchstart', (e) => {
+        isDown = true;
+        startX = e.touches[0].pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+      });
+      
+      container.addEventListener('touchend', () => {
+        isDown = false;
+      });
+      
+      container.addEventListener('touchcancel', () => {
+        isDown = false;
+      });
+      
+      container.addEventListener('touchmove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.touches[0].pageX - container.offsetLeft;
+        const walk = (x - startX) * 2;
+        container.scrollLeft = scrollLeft - walk;
+      });
+    }
+
     // Tab switching functionality (optimized)
     const tabs = modal.querySelectorAll('.fc-settings-tab');
     const mainTab = document.getElementById('fc-tab-main');
@@ -1183,6 +1286,9 @@
           modalOverlay.style.display = 'block';
           
           document.body.classList.add('fc-modal-open');
+          
+          // Initialize tab scrolling when modal opens
+          setTimeout(initTabScrolling, 50);
         } else {
           modal.classList.add('closing');
           modalOverlay.classList.add('closing');
@@ -1214,6 +1320,9 @@
 
     // Initial load of settings
     loadSettingsIntoUI();
+    
+    // Initialize tab scrolling
+    initTabScrolling();
   }
 
   // Start waiting for main script
