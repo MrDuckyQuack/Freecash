@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.5.4
+// @version      1.5.5
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -28,26 +28,26 @@
     // Add settings modal styles (optimized)
     GM_addStyle(`
       /* Settings Modal Styles - Optimized */
-.fc-settings-modal {
-  position: fixed;
-  bottom: 140px;
-  right: 20px;
-  width: 350px;
-  background: rgba(20, 20, 30, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 2px solid #10b981;
-  border-radius: 20px;
-  padding: 0;
-  z-index: 999999;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  animation: modalSlideUp 0.2s ease;
-  color: white;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  overflow: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  will-change: transform, opacity;
-}
+      .fc-settings-modal {
+        position: fixed;
+        bottom: 140px;
+        right: 20px;
+        width: 350px;
+        background: rgba(20, 20, 30, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 2px solid #10b981;
+        border-radius: 20px;
+        padding: 0;
+        z-index: 999999;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        animation: modalSlideUp 0.2s ease;
+        color: white;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        overflow: hidden;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        will-change: transform, opacity;
+      }
 
       .fc-settings-modal.closing {
         opacity: 0;
@@ -540,20 +540,20 @@
         background: rgba(0,0,0,0.2);
       }
 
-.fc-settings-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 999998;
-  animation: fadeIn 0.2s ease;
-  transition: opacity 0.2s ease;
-  will-change: opacity;
-}
+      .fc-settings-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 999998;
+        animation: fadeIn 0.2s ease;
+        transition: opacity 0.2s ease;
+        will-change: opacity;
+      }
 
       .fc-settings-modal-overlay.closing {
         opacity: 0;
@@ -564,47 +564,73 @@
         to { opacity: 1; }
       }
 
-      /* Fix for settings button not being blurred */
-/* Fix for settings button - KEEP IT VISIBLE AND CRISP */
-.fc-settings-btn,
-button.fc-settings-btn {
-  /* Override any backdrop-filter from parent elements */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  
-  /* Ensure it stays visible */
-  display: inline-block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  
-  /* Keep it above the blur */
-  position: relative !important;
-  z-index: 1000000 !important;
-  
-  /* Force hardware acceleration */
-  transform: translateZ(0) !important;
-  -webkit-transform: translateZ(0) !important;
-  
-  /* Maintain crisp rendering */
-  image-rendering: crisp-edges !important;
-  -webkit-font-smoothing: antialiased !important;
-}
+      /* Settings Button Styles */
+      .fc-settings-btn {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: #10b981 !important;
+        border: 3px solid white !important;
+        color: white !important;
+        font-size: 24px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 15px rgba(16,185,129,0.4) !important;
+        z-index: 999997 !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        animation: settingsButtonAppear 0.3s ease !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        -webkit-filter: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+      }
 
-/* When modal is open */
-body.fc-modal-open .fc-settings-btn,
-body.fc-modal-open button.fc-settings-btn {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  display: inline-block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  z-index: 1000000 !important;
-}
+      .fc-settings-btn:hover {
+        transform: scale(1.1) rotate(90deg) !important;
+        box-shadow: 0 6px 20px rgba(16,185,129,0.6) !important;
+        background: #059669 !important;
+      }
+
+      @keyframes settingsButtonAppear {
+        from {
+          opacity: 0;
+          transform: scale(0) rotate(-180deg);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) rotate(0);
+        }
+      }
+
+      /* When modal is open */
+      body.fc-modal-open .fc-settings-btn {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        -webkit-filter: none !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999997 !important;
+      }
     `);
+
+    // Create settings button
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'fc-settings-btn';
+    settingsBtn.id = 'fc-settings-btn';
+    settingsBtn.innerHTML = '⚙️';
+    settingsBtn.setAttribute('aria-label', 'Open Settings');
+    settingsBtn.setAttribute('title', 'DuckyQuack Settings');
+    document.body.appendChild(settingsBtn);
 
     // Create modal elements
     const modalOverlay = document.createElement('div');
@@ -965,6 +991,13 @@ body.fc-modal-open button.fc-settings-btn {
       });
     }
 
+    // Settings button click handler
+    settingsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.toggleSettingsModal();
+    });
+
     // Toggle modal function (optimized)
     window.toggleSettingsModal = function(show) {
       const isVisible = show !== undefined ? show : modal.style.display === 'none';
@@ -1011,7 +1044,7 @@ body.fc-modal-open button.fc-settings-btn {
     // Initial load of settings
     loadSettingsIntoUI();
 
-    console.log('⚙️ Settings UI initialized');
+    console.log('⚙️ Settings UI initialized with button');
   }
 
   // Start waiting for main script
