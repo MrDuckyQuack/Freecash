@@ -1,7 +1,8 @@
 {
   "scripts": [
     "loading.js",
+    "main.js",
     "settings.js",
-    "main.js"
+    "progress.js"
   ]
 }
