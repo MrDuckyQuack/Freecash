@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Welcome
 // @namespace    freecash-duck-welcome
-// @version      1.0
+// @version      1.1
 // @description  Shows a cute duck loading screen for 4 seconds on Freecash
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -13,15 +13,17 @@
 (function () {
   'use strict';
 
-  console.log('🦆 Duck Welcome Screen ready');
+  console.log('🦆 Duck Welcome Screen loading...');
 
-  // Add styles for the duck loader
+  // Add styles immediately
   GM_addStyle(`
-    /* Duck Welcome Screen Styles */
+    /* Duck Welcome Screen - FORCED FULL PAGE */
     .duck-welcome-container {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       background: linear-gradient(135deg, #0f172a, #1e293b) !important;
@@ -29,13 +31,16 @@
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
-      z-index: 9999999 !important;
+      z-index: 999999999 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
-      animation: fadeOut 0.5s ease 3.5s forwards !important;
+      animation: duckFadeOut 0.5s ease 4s forwards !important;
       pointer-events: none !important;
     }
 
-    @keyframes fadeOut {
+    @keyframes duckFadeOut {
       to {
         opacity: 0;
         visibility: hidden;
@@ -43,150 +48,189 @@
     }
 
     .duck-welcome-duck {
-      font-size: 120px !important;
+      font-size: 150px !important;
       line-height: 1 !important;
-      margin-bottom: 20px !important;
-      animation: duckWave 2s ease-in-out infinite !important;
-      filter: drop-shadow(0 20px 30px rgba(16,185,129,0.3)) !important;
+      margin-bottom: 30px !important;
+      animation: duckWobble 2s ease-in-out infinite !important;
+      filter: drop-shadow(0 20px 40px rgba(16,185,129,0.5)) !important;
+      transform-origin: center center !important;
     }
 
-    @keyframes duckWave {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      25% { transform: translateY(-20px) rotate(-5deg); }
-      75% { transform: translateY(-10px) rotate(5deg); }
+    @keyframes duckWobble {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+      25% { transform: translateY(-25px) rotate(-8deg) scale(1.1); }
+      75% { transform: translateY(-15px) rotate(8deg) scale(1.05); }
     }
 
     .duck-welcome-text {
-      font-size: 36px !important;
-      font-weight: 800 !important;
-      background: linear-gradient(135deg, #10b981, #34d399, #10b981) !important;
-      background-size: 200% auto !important;
+      font-size: 48px !important;
+      font-weight: 900 !important;
+      background: linear-gradient(135deg, #10b981, #34d399, #10b981, #34d399) !important;
+      background-size: 300% auto !important;
       -webkit-background-clip: text !important;
       -webkit-text-fill-color: transparent !important;
-      animation: gradient 2s linear infinite !important;
-      margin-bottom: 30px !important;
-      text-shadow: 0 0 30px rgba(16,185,129,0.3) !important;
+      animation: duckGradient 3s linear infinite !important;
+      margin: 20px 0 !important;
+      text-shadow: 0 0 40px rgba(16,185,129,0.3) !important;
+      letter-spacing: 2px !important;
     }
 
-    @keyframes gradient {
+    @keyframes duckGradient {
       0% { background-position: 0% center; }
-      100% { background-position: 200% center; }
+      100% { background-position: 300% center; }
     }
 
     .duck-welcome-subtext {
       color: #94a3b8 !important;
-      font-size: 18px !important;
-      margin-top: 20px !important;
-      letter-spacing: 1px !important;
+      font-size: 24px !important;
+      margin: 20px 0 !important;
+      letter-spacing: 2px !important;
+      font-weight: 300 !important;
     }
 
     .duck-welcome-progress {
-      width: 300px !important;
-      height: 6px !important;
+      width: 400px !important;
+      height: 8px !important;
       background: rgba(255,255,255,0.1) !important;
-      border-radius: 10px !important;
+      border-radius: 20px !important;
       overflow: hidden !important;
-      margin: 30px 0 !important;
+      margin: 40px 0 !important;
+      border: 2px solid rgba(16,185,129,0.2) !important;
+      box-shadow: 0 0 30px rgba(16,185,129,0.2) !important;
     }
 
     .duck-welcome-progress-fill {
       height: 100% !important;
       width: 0% !important;
-      background: linear-gradient(90deg, #10b981, #34d399) !important;
-      animation: progress 4s linear forwards !important;
+      background: linear-gradient(90deg, #10b981, #34d399, #10b981) !important;
+      background-size: 200% auto !important;
+      animation: duckProgress 4s linear forwards, duckShine 1s linear infinite !important;
+      border-radius: 20px !important;
     }
 
-    @keyframes progress {
+    @keyframes duckProgress {
       0% { width: 0%; }
       100% { width: 100%; }
     }
 
+    @keyframes duckShine {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
     .duck-welcome-footer {
       position: absolute !important;
-      bottom: 30px !important;
+      bottom: 40px !important;
       color: #475569 !important;
-      font-size: 14px !important;
+      font-size: 16px !important;
+      font-weight: 300 !important;
+      letter-spacing: 1px !important;
+    }
+
+    /* Force hide everything else while loading */
+    .duck-welcome-container ~ * {
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
   `);
 
   // Array of fun duck messages
   const duckMessages = [
-    "🦆 Welcome to Freecash!",
-    "🦆 DuckyQuack was here",
-    "🦆 Quack!",
-    "🦆 Ready to earn?",
-    "🦆 Let's get this bread",
-    "🦆 Duck mode: ON",
-    "🦆 Loading ducky magic",
-    "🦆 Waddle you waiting for?"
+    "🦆 WELCOME TO FREECASH!",
+    "🦆 DUCKYQUACK WAS HERE",
+    "🦆 QUACK QUACK!",
+    "🦆 READY TO EARN?",
+    "🦆 LET'S GET THIS BREAD",
+    "🦆 DUCK MODE: ACTIVATED",
+    "🦆 LOADING DUCKY MAGIC",
+    "🦆 WADDLE YOU WAITING FOR?",
+    "🦆 DUCK SEASON!",
+    "🦆 FREE MONEY DUCK"
   ];
 
   // Array of duck emojis
-  const duckEmojis = ["🦆", "🦆✨", "🦆🌟", "🦆💫", "🦆⚡", "🦆🌈"];
+  const duckEmojis = ["🦆", "🦆✨", "🦆🌟", "🦆💫", "🦆⚡", "🦆🌈", "🦆🔥", "🦆💦", "🐥", "🦆🦆"];
 
-  // Create welcome screen
-  function createWelcomeScreen() {
-    // Don't show if already shown in this session
+  // Show welcome screen immediately
+  function showWelcomeScreen() {
+    // Check if already shown in this session
     if (sessionStorage.getItem('duckWelcomeShown')) {
       return;
     }
 
+    console.log('🦆 Showing welcome screen...');
+
+    // Random selections
     const randomMessage = duckMessages[Math.floor(Math.random() * duckMessages.length)];
     const randomDuck = duckEmojis[Math.floor(Math.random() * duckEmojis.length)];
 
+    // Create welcome screen
     const welcomeScreen = document.createElement('div');
     welcomeScreen.className = 'duck-welcome-container';
     welcomeScreen.id = 'duck-welcome-screen';
+    welcomeScreen.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+      z-index: 999999999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+    `;
+
     welcomeScreen.innerHTML = `
       <div class="duck-welcome-duck">${randomDuck}</div>
       <div class="duck-welcome-text">${randomMessage}</div>
+      <div class="duck-welcome-subtext">Making Freecash ducky since 2024</div>
       <div class="duck-welcome-progress">
         <div class="duck-welcome-progress-fill"></div>
       </div>
-      <div class="duck-welcome-subtext">Making Freecash ducky since 2024</div>
-      <div class="duck-welcome-footer">🐤 DuckyQuack</div>
+      <div class="duck-welcome-footer">🐤 Created by DuckyQuack</div>
     `;
 
-    return welcomeScreen;
-  }
-
-  // Show the welcome screen
-  function showWelcomeScreen() {
-    // Check if already shown
-    if (sessionStorage.getItem('duckWelcomeShown')) {
-      return;
-    }
-
-    const welcomeScreen = createWelcomeScreen();
-    if (welcomeScreen) {
+    // Force add to document
+    if (document.documentElement) {
       document.documentElement.appendChild(welcomeScreen);
-      
-      // Mark as shown
-      sessionStorage.setItem('duckWelcomeShown', 'true');
-      
-      // Remove after animation completes (4 seconds + fade out)
-      setTimeout(() => {
-        const screen = document.getElementById('duck-welcome-screen');
-        if (screen && screen.parentNode) {
-          screen.parentNode.removeChild(screen);
-        }
-      }, 4500); // 4s progress + 0.5s fade
+    } else {
+      document.appendChild(welcomeScreen);
     }
+
+    // Mark as shown
+    sessionStorage.setItem('duckWelcomeShown', 'true');
+    
+    // Remove after 4.5 seconds
+    setTimeout(() => {
+      const screen = document.getElementById('duck-welcome-screen');
+      if (screen && screen.parentNode) {
+        screen.parentNode.removeChild(screen);
+        console.log('🦆 Welcome screen removed');
+      }
+    }, 4500);
   }
 
-  // Show welcome screen when page loads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', showWelcomeScreen);
-  } else {
+  // Try to show immediately
+  if (document.documentElement) {
     showWelcomeScreen();
+  } else {
+    // Wait for document to be ready
+    document.addEventListener('readystatechange', () => {
+      if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        showWelcomeScreen();
+      }
+    });
   }
 
-  // Also show on page navigation (but not on refresh thanks to sessionStorage)
-  window.addEventListener('pageshow', (event) => {
-    // Don't show on page back/forward if already shown
-    if (!sessionStorage.getItem('duckWelcomeShown')) {
-      showWelcomeScreen();
-    }
-  });
+  // Force show on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', showWelcomeScreen);
+
+  // Also try on load
+  window.addEventListener('load', showWelcomeScreen);
+
+  // Manual override
+  window.showDuckWelcome = showWelcomeScreen;
 
 })();
