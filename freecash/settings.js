@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.1
+// @version      1.7.2
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -380,16 +380,21 @@
 
       .fc-setting-label span { font-size: 1.2em; }
 
-      /* Standard pill toggle switch */
+      /* Standard toggle switch */
       .fc-toggle {
         position: relative;
         display: inline-block;
-        width: 46px;
-        height: 26px;
+        width: 44px;
+        height: 24px;
         flex-shrink: 0;
       }
 
-      .fc-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+      .fc-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
 
       .fc-toggle-slider {
         position: absolute;
@@ -397,20 +402,21 @@
         top: 0; left: 0; right: 0; bottom: 0;
         background-color: #4b5563;
         transition: background-color 0.2s ease;
-        border-radius: 26px;
+        border-radius: 999px;
       }
 
       .fc-toggle-slider::before {
-        position: absolute;
         content: "";
-        height: 20px;
-        width: 20px;
+        position: absolute;
+        width: 18px;
+        height: 18px;
         left: 3px;
         top: 3px;
         background-color: white;
-        transition: transform 0.2s ease;
         border-radius: 50%;
+        transition: transform 0.2s ease;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        display: block;
       }
 
       .fc-toggle input:checked + .fc-toggle-slider { background-color: #10b981; }
