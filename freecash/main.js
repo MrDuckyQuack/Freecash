@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Percentage with Colored Borders - Made by DuckyQuack
 // @namespace    freecash-percent-4dec
-// @version      3.6.1
+// @version      3.6.2
 // @description  Show progress percentage with colored container borders and duck dance at 100% - Customized by DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
@@ -22,7 +22,8 @@
     borderPulseEnabled: true,
     showEmojis: true,
     decimalPrecision: 4,
-    updateSpeed: 'normal' // 'slow', 'normal', 'fast'
+    updateSpeed: 'normal',
+    showDuckWelcome: true // Added this
   };
 
   // Load config or use defaults
@@ -31,23 +32,28 @@
   // Check if GM functions are available
   const hasGmStorage = typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined';
   
-  if (hasGmStorage) {
-    // Load from GM storage
-    Object.keys(defaultConfig).forEach(key => {
-      const value = GM_getValue(key, defaultConfig[key]);
-      userConfig[key] = value;
-    });
-  } else {
-    // Fallback to localStorage
-    try {
-      const saved = localStorage.getItem('fc-ducky-config');
-      if (saved) {
-        userConfig = { ...defaultConfig, ...JSON.parse(saved) };
+  function loadConfig() {
+    if (hasGmStorage) {
+      // Load from GM storage
+      Object.keys(defaultConfig).forEach(key => {
+        const value = GM_getValue(key, defaultConfig[key]);
+        userConfig[key] = value;
+      });
+    } else {
+      // Fallback to localStorage
+      try {
+        const saved = localStorage.getItem('fc-ducky-config');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          userConfig = { ...defaultConfig, ...parsed };
+        }
+      } catch (e) {
+        console.log('Using default config');
       }
-    } catch (e) {
-      console.log('Using default config');
     }
   }
+  
+  loadConfig();
 
   // Save config function
   window.saveConfig = function() {
@@ -63,12 +69,15 @@
       }
     }
     
-    // Apply config changes immediately
     applyConfigChanges();
+    
+    // Dispatch event for loading.js
+    window.dispatchEvent(new CustomEvent('duckConfigChanged', { detail: userConfig }));
   };
 
   // Update config function (called from settings)
   window.updateConfig = function(newConfig) {
+    console.log('⚙️ Updating config:', newConfig);
     userConfig = { ...userConfig, ...newConfig };
     saveConfig();
   };
@@ -76,13 +85,12 @@
   // Apply config changes to running animations
   function applyConfigChanges() {
     console.log('⚙️ Config updated:', userConfig);
-    // You can add logic here to disable/enable animations globally
   }
 
   // ========== LOADER INDICATOR WITH ANIMATION ==========
   console.log('🦆 Freecash Progress Script starting...');
 
-  // Add loader styles with animations
+  // Add loader styles with animations - UPDATED settings button style
   GM_addStyle(`
     .fc-loader-script {
       position: fixed;
@@ -193,7 +201,7 @@
       100% { transform: rotate(0) scale(1); }
     }
 
-    /* Settings Button Styles - Minimal (just the button) */
+    /* Settings Button Styles - FULLY GREEN with WHITE GEAR */
     .fc-settings-btn {
       position: fixed;
       bottom: 80px;
@@ -201,8 +209,8 @@
       width: 45px;
       height: 45px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #10b981, #059669);
-      border: 2px solid rgba(255,255,255,0.3);
+      background: #10b981 !important; /* Solid green, no gradient */
+      border: none !important; /* No white border */
       color: white !important;
       font-size: 24px;
       cursor: pointer;
@@ -213,13 +221,15 @@
       box-shadow: 0 4px 15px rgba(16,185,129,0.4);
       transition: all 0.3s ease;
       animation: settingsPop 0.5s ease;
-      backdrop-filter: blur(4px);
+      padding: 0;
+      margin: 0;
+      line-height: 1;
     }
 
     .fc-settings-btn:hover {
       transform: rotate(90deg) scale(1.1);
       box-shadow: 0 6px 20px rgba(16,185,129,0.6);
-      background: linear-gradient(135deg, #059669, #047857);
+      background: #059669 !important; /* Darker green on hover */
     }
 
     .fc-settings-btn:active {
@@ -228,7 +238,7 @@
 
     .fc-settings-btn .gear-icon {
       color: white !important;
-      filter: brightness(0) invert(1);
+      display: inline-block;
     }
 
     @keyframes settingsPop {
@@ -243,29 +253,38 @@
     }
   `);
 
-  // ========== SETTINGS BUTTON (Just the button, modal is in settings.js) ==========
+  // ========== SETTINGS BUTTON ==========
   function createSettingsButton() {
     if (!document.body) {
       setTimeout(createSettingsButton, 50);
       return;
     }
 
+    // Remove any existing button first
+    const oldBtn = document.getElementById('fc-settings-btn');
+    if (oldBtn) oldBtn.remove();
+
     // Create settings button with white gear icon
     const settingsBtn = document.createElement('div');
     settingsBtn.className = 'fc-settings-btn';
     settingsBtn.id = 'fc-settings-btn';
-    settingsBtn.innerHTML = '<span class="gear-icon" style="color: white !important;">⚙️</span>';
+    settingsBtn.innerHTML = '<span class="gear-icon">⚙️</span>';
     settingsBtn.title = 'DuckyQuack Settings';
     document.body.appendChild(settingsBtn);
 
-    // Settings button click handler - this will be overridden by settings.js
+    // Settings button click handler
     settingsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Check if settings modal function exists (from settings.js)
       if (typeof window.toggleSettingsModal === 'function') {
         window.toggleSettingsModal(true);
       } else {
         console.log('Settings modal not loaded yet');
+        // Retry after a delay
+        setTimeout(() => {
+          if (typeof window.toggleSettingsModal === 'function') {
+            window.toggleSettingsModal(true);
+          }
+        }, 500);
       }
     });
 
@@ -278,6 +297,10 @@
       setTimeout(addLoader, 50);
       return;
     }
+    
+    // Remove any existing loader
+    const oldLoader = document.getElementById('fc-loader-script');
+    if (oldLoader) oldLoader.remove();
     
     const loader = document.createElement('div');
     loader.className = 'fc-loader-script';
@@ -337,19 +360,30 @@
   // Duck dance animation frames
   const duckFrames = ['🦆', '🦆💃', '🦆🕺', '🎉🦆🎉', '🦆✨', '🦆🌟', '🦆🎊', '🦆🎈'];
 
-  // Initialize progress display from progress.js
-  setTimeout(() => {
+  // Wait for progress.js to load and initialize
+  function initProgress() {
     if (typeof window.initProgressDisplay === 'function') {
-      window.initProgressDisplay(userConfig, duckFrames);
-      console.log('📊 Progress display initialized from main.js');
-      
-      // Update loader after progress display is initialized
-      if (typeof window.updateLoader === 'function') {
-        window.updateLoader('Quack! 🎉');
+      try {
+        window.initProgressDisplay(userConfig, duckFrames);
+        console.log('📊 Progress display initialized from main.js');
+        
+        if (typeof window.updateLoader === 'function') {
+          window.updateLoader('Quack! 🎉');
+        }
+      } catch (e) {
+        console.error('Error initializing progress display:', e);
       }
     } else {
-      console.error('❌ Progress display module not loaded');
+      console.log('⏳ Waiting for progress display module...');
+      setTimeout(initProgress, 200);
     }
-  }, 500);
+  }
+
+  // Try to initialize progress after a short delay
+  setTimeout(initProgress, 500);
+  setTimeout(initProgress, 1000); // Second attempt just in case
+
+  // Make userConfig available globally for settings.js
+  window.userConfig = userConfig;
 
 })();
