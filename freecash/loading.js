@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Freecash Duck Welcome
 // @namespace    freecash-duck-welcome
-// @version      1.3
-// @description  Shows a cute duck loading screen on Freecash after page load
+// @version      1.4
+// @description  Shows a cute duck loading screen on Freecash after page load and navigation
 // @author       DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
@@ -113,6 +113,9 @@
       border-radius: 99px !important;
       background: linear-gradient(90deg, #10b981, #34d399, #10b981) !important;
       background-size: 200% auto !important;
+    }
+
+    .duck-bar-fill.duck-bar-animate {
       animation: duckBarGrow 3.5s cubic-bezier(0.4,0,0.2,1) forwards,
                  duckBarShine 1s linear infinite !important;
     }
@@ -136,8 +139,15 @@
     }
   `);
 
+  let activeTimer = null;
+
   function showDuck() {
-    if (document.getElementById('duck-welcome-screen')) return;
+    // Clear any pending timers
+    if (activeTimer) clearTimeout(activeTimer);
+
+    // Remove existing overlay immediately if present
+    const existing = document.getElementById('duck-welcome-screen');
+    if (existing) existing.remove();
 
     const msg   = duckMessages[Math.floor(Math.random() * duckMessages.length)];
     const emoji = duckEmojis[Math.floor(Math.random() * duckEmojis.length)];
@@ -156,28 +166,49 @@
 
     document.body.appendChild(el);
 
-    // Fade in on next paint
+    // Fade in + start progress bar on next paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         el.classList.add('duck-visible');
+        const bar = el.querySelector('.duck-bar-fill');
+        if (bar) bar.classList.add('duck-bar-animate');
       });
     });
 
-    // Fade out after 4 seconds (progress bar matches at 3.5s)
-    setTimeout(() => {
+    // Fade out after 4 seconds
+    activeTimer = setTimeout(() => {
       el.classList.add('duck-hiding');
       setTimeout(() => el.remove(), 500);
     }, 4000);
   }
 
-  // Wait 2 seconds after the page is fully loaded, then show
-  window.addEventListener('load', () => {
-    setTimeout(showDuck, 2000);
-  });
-
-  // Fallback: if load already fired (script ran late), just wait 2s from now
-  if (document.readyState === 'complete') {
+  function triggerAfterDelay() {
     setTimeout(showDuck, 2000);
   }
+
+  // ── Initial page load ──────────────────────────────────────────────
+  if (document.readyState === 'complete') {
+    triggerAfterDelay();
+  } else {
+    window.addEventListener('load', triggerAfterDelay, { once: true });
+  }
+
+  // ── SPA / client-side navigation (History API) ────────────────────
+  // Freecash is a React SPA — it uses pushState/replaceState for routing
+  const _pushState    = history.pushState.bind(history);
+  const _replaceState = history.replaceState.bind(history);
+
+  history.pushState = function (...args) {
+    _pushState(...args);
+    triggerAfterDelay();
+  };
+
+  history.replaceState = function (...args) {
+    _replaceState(...args);
+    triggerAfterDelay();
+  };
+
+  // Also catch back/forward navigation
+  window.addEventListener('popstate', triggerAfterDelay);
 
 })();
