@@ -1,17 +1,84 @@
 // ==UserScript==
 // @name         Freecash Progress Percentage with Colored Borders - Made by DuckyQuack
 // @namespace    freecash-percent-4dec
-// @version      3.2
+// @version      3.5
 // @description  Show progress percentage with colored container borders and duck dance at 100% - Customized by DuckyQuack
-// @author       DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
 // @run-at       document-idle
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/others/settings
 // ==/UserScript==
 
 (function () {
   'use strict';
+
+  // ========== CONFIGURATION STORAGE ==========
+  const defaultConfig = {
+    animationsEnabled: true,
+    numberRollEnabled: true,
+    duckDanceEnabled: true,
+    borderPulseEnabled: true,
+    showEmojis: true,
+    decimalPrecision: 4,
+    updateSpeed: 'normal' // 'slow', 'normal', 'fast'
+  };
+
+  // Load config or use defaults
+  let userConfig = { ...defaultConfig };
+  
+  // Check if GM functions are available
+  const hasGmStorage = typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined';
+  
+  if (hasGmStorage) {
+    // Load from GM storage
+    Object.keys(defaultConfig).forEach(key => {
+      const value = GM_getValue(key, defaultConfig[key]);
+      userConfig[key] = value;
+    });
+  } else {
+    // Fallback to localStorage
+    try {
+      const saved = localStorage.getItem('fc-ducky-config');
+      if (saved) {
+        userConfig = { ...defaultConfig, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.log('Using default config');
+    }
+  }
+
+  // Save config function
+  window.saveConfig = function() {
+    if (hasGmStorage) {
+      Object.keys(userConfig).forEach(key => {
+        GM_setValue(key, userConfig[key]);
+      });
+    } else {
+      try {
+        localStorage.setItem('fc-ducky-config', JSON.stringify(userConfig));
+      } catch (e) {
+        console.log('Could not save config');
+      }
+    }
+    
+    // Apply config changes immediately
+    applyConfigChanges();
+  };
+
+  // Update config function (called from settings)
+  window.updateConfig = function(newConfig) {
+    userConfig = { ...userConfig, ...newConfig };
+    saveConfig();
+  };
+
+  // Apply config changes to running animations
+  function applyConfigChanges() {
+    console.log('⚙️ Config updated:', userConfig);
+    // You can add logic here to disable/enable animations globally
+  }
 
   // ========== LOADER INDICATOR WITH ANIMATION ==========
   console.log('🦆 Freecash Progress Script starting...');
@@ -126,9 +193,87 @@
       0% { transform: rotate(-180deg) scale(0); }
       100% { transform: rotate(0) scale(1); }
     }
+
+    /* Settings Button Styles - Minimal (just the button) */
+    .fc-settings-btn {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white !important;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 999998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+      transition: all 0.3s ease;
+      animation: settingsPop 0.5s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .fc-settings-btn:hover {
+      transform: rotate(90deg) scale(1.1);
+      box-shadow: 0 6px 20px rgba(16,185,129,0.6);
+      background: linear-gradient(135deg, #059669, #047857);
+    }
+
+    .fc-settings-btn:active {
+      transform: rotate(180deg) scale(0.95);
+    }
+
+    .fc-settings-btn .gear-icon {
+      color: white !important;
+      filter: brightness(0) invert(1);
+    }
+
+    @keyframes settingsPop {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      70% { transform: scale(1.1) rotate(10deg); }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    /* Prevent body scroll when modal is open */
+    body.fc-modal-open {
+      overflow: hidden !important;
+    }
   `);
 
-  // Wait for body to exist before adding loader
+  // ========== SETTINGS BUTTON (Just the button, modal is in settings.js) ==========
+  function createSettingsButton() {
+    if (!document.body) {
+      setTimeout(createSettingsButton, 50);
+      return;
+    }
+
+    // Create settings button with white gear icon
+    const settingsBtn = document.createElement('div');
+    settingsBtn.className = 'fc-settings-btn';
+    settingsBtn.id = 'fc-settings-btn';
+    settingsBtn.innerHTML = '<span class="gear-icon" style="color: white !important;">⚙️</span>';
+    settingsBtn.title = 'DuckyQuack Settings';
+    document.body.appendChild(settingsBtn);
+
+    // Settings button click handler - this will be overridden by settings.js
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Check if settings modal function exists (from settings.js)
+      if (typeof window.toggleSettingsModal === 'function') {
+        window.toggleSettingsModal(true);
+      } else {
+        console.log('Settings modal not loaded yet');
+      }
+    });
+
+    console.log('⚙️ Settings button created');
+  }
+
+  // Wait for body to exist before adding loader and settings
   function addLoader() {
     if (!document.body) {
       setTimeout(addLoader, 50);
@@ -181,9 +326,13 @@
 
   // Start trying to add loader
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addLoader);
+    document.addEventListener('DOMContentLoaded', () => {
+      addLoader();
+      createSettingsButton();
+    });
   } else {
     addLoader();
+    createSettingsButton();
   }
 
   // Store previous percentages to detect REAL changes
@@ -201,6 +350,8 @@
   }
 
   function getProgressEmoji(percent) {
+    if (!userConfig.showEmojis) return '';
+    
     if (percent >= 100) return '🏆';
     if (percent >= 90) return '🚀';
     if (percent >= 75) return '⚡';
@@ -211,6 +362,15 @@
   }
 
   function createNumberRollAnimation(element, oldValue, newValue) {
+    if (!userConfig.numberRollEnabled || !userConfig.animationsEnabled) {
+      // Just update the number directly
+      const numberSpan = element.querySelector('.rolling-number');
+      if (numberSpan) {
+        numberSpan.textContent = `${newValue.toFixed(userConfig.decimalPrecision)}%`;
+      }
+      return;
+    }
+    
     const duration = 2500; // 2.5 seconds for the roll
     const startTime = performance.now();
     const difference = newValue - oldValue;
@@ -223,8 +383,8 @@
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
 
       const currentValue = oldValue + (difference * easeOutQuart);
-      const currentStr = currentValue.toFixed(4);
-      const newStr = newValue.toFixed(4);
+      const currentStr = currentValue.toFixed(userConfig.decimalPrecision);
+      const newStr = newValue.toFixed(userConfig.decimalPrecision);
 
       // Split into parts
       const [intPart, decimalPart] = currentStr.split('.');
@@ -315,7 +475,7 @@
                       parentSpan.innerHTML = `
                         <span style="font-size: 1.1em;" class="progress-emoji">${currentEmoji}</span>
                         <span style="font-family: monospace; display: inline-flex; align-items: baseline; color: inherit;" class="rolling-number">
-                          ${newValue.toFixed(4)}%
+                          ${newValue.toFixed(userConfig.decimalPrecision)}%
                         </span>
                       `;
                     }
@@ -332,6 +492,22 @@
   }
 
   function createDuckDance(element) {
+    if (!userConfig.duckDanceEnabled || !userConfig.animationsEnabled) {
+      // Just show a simple 100% indicator
+      element.innerHTML = `
+        <span style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        ">
+          <span>🏆</span>
+          <span style="font-family: monospace; font-weight: bold;">100%</span>
+        </span>
+      `;
+      return;
+    }
+    
     let frame = 0;
 
     const danceInterval = setInterval(() => {
@@ -374,7 +550,7 @@
     }, 5000);
   }
 
-  // Debounce function
+  // Debounce function with configurable speed
   function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -387,13 +563,23 @@
     };
   }
 
+  // Get debounce time based on user config
+  function getDebounceTime() {
+    switch(userConfig.updateSpeed) {
+      case 'slow': return 300;
+      case 'fast': return 50;
+      case 'normal':
+      default: return 150;
+    }
+  }
+
   const updatePercents = debounce(function() {
     document.querySelectorAll('[role="progressbar"][aria-valuenow]').forEach(bar => {
       const raw = parseFloat(bar.getAttribute('aria-valuenow'));
       if (!Number.isFinite(raw) || raw < 0 || raw > 100) return;
 
       const percentValue = raw;
-      const pct = percentValue.toFixed(4);
+      const pct = percentValue.toFixed(userConfig.decimalPrecision);
 
       const row =
         bar.closest('div[class*="onboarding-offer-task"]') ||
@@ -435,6 +621,11 @@
         if (!pctEl.classList.contains('duck-dancing')) {
           pctEl.classList.add('duck-dancing');
 
+          let borderAnimation = '';
+          if (userConfig.borderPulseEnabled && userConfig.animationsEnabled) {
+            borderAnimation = 'animation: borderPulse 2s infinite;';
+          }
+
           pctEl.style.cssText = `
             display: inline-flex;
             align-items: center;
@@ -446,7 +637,7 @@
             padding: 4px 16px;
             margin-right: 8px;
             box-shadow: 0 0 15px ${progressColor}40;
-            animation: borderPulse 2s infinite;
+            ${borderAnimation}
           `;
 
           createDuckDance(pctEl);
@@ -459,6 +650,11 @@
       pctEl.classList.remove('duck-dancing');
 
       // Style with colored border and transparent background
+      let borderAnimation = '';
+      if (userConfig.borderPulseEnabled && userConfig.animationsEnabled) {
+        borderAnimation = 'animation: borderPulse 2s infinite;';
+      }
+
       pctEl.style.cssText = `
         display: inline-flex;
         align-items: center;
@@ -471,6 +667,7 @@
         margin-right: 8px;
         box-shadow: 0 0 10px ${progressColor}40;
         transition: all 0.3s ease;
+        ${borderAnimation}
       `;
 
       // Create the inner content structure (normal, non-animated state)
@@ -486,7 +683,7 @@
           position: relative;
           z-index: 2;
         ">
-          <span style="font-size: 1.1em;" class="progress-emoji">${progressEmoji}</span>
+          ${progressEmoji ? `<span style="font-size: 1.1em;" class="progress-emoji">${progressEmoji}</span>` : ''}
           <span style="font-family: monospace; display: inline-flex; align-items: baseline; color: inherit;" class="rolling-number">
             ${pct}%
           </span>
@@ -499,12 +696,29 @@
       } else {
         // Update emoji if needed
         const emojiSpan = pctEl.querySelector('.progress-emoji');
-        if (emojiSpan && emojiSpan.textContent !== progressEmoji) {
-          emojiSpan.textContent = progressEmoji;
-          emojiSpan.style.animation = 'emojiPop 0.5s ease';
-          setTimeout(() => {
-            emojiSpan.style.animation = '';
-          }, 500);
+        if (userConfig.showEmojis) {
+          if (emojiSpan && emojiSpan.textContent !== progressEmoji) {
+            emojiSpan.textContent = progressEmoji;
+            if (userConfig.animationsEnabled) {
+              emojiSpan.style.animation = 'emojiPop 0.5s ease';
+              setTimeout(() => {
+                emojiSpan.style.animation = '';
+              }, 500);
+            }
+          } else if (!emojiSpan && progressEmoji) {
+            // Add emoji if missing
+            const container = pctEl.querySelector('span[style*="display: flex"]');
+            if (container) {
+              const emojiSpan = document.createElement('span');
+              emojiSpan.className = 'progress-emoji';
+              emojiSpan.style.fontSize = '1.1em';
+              emojiSpan.textContent = progressEmoji;
+              container.insertBefore(emojiSpan, container.firstChild);
+            }
+          }
+        } else if (emojiSpan) {
+          // Remove emoji if disabled
+          emojiSpan.remove();
         }
       }
 
@@ -513,15 +727,17 @@
         createNumberRollAnimation(pctEl, oldPercent, percentValue);
 
         // Add container pop animation
-        pctEl.style.animation = 'containerPop 0.8s ease';
-        setTimeout(() => {
-          pctEl.style.animation = '';
-        }, 800);
+        if (userConfig.animationsEnabled) {
+          pctEl.style.animation = 'containerPop 0.8s ease';
+          setTimeout(() => {
+            pctEl.style.animation = '';
+          }, 800);
+        }
       }
 
       previousPercentages.set(elementId, percentValue);
     });
-  }, 150);
+  }, getDebounceTime());
 
   // Add all animations
   const style = document.createElement('style');
