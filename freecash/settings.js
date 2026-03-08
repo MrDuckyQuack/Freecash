@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.4
+// @version      1.7.5
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -381,58 +381,54 @@
       .fc-setting-label span { font-size: 1.2em; }
 
       /* Circle toggle */
-      .fc-toggle {
-        position: relative;
-        display: inline-block;
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
-        min-height: 32px !important;
-        flex-shrink: 0;
-      }
+.fc-toggle {
+  position: relative;
+  display: inline-block;
+  width: 46px !important;
+  height: 24px !important;
+  min-width: 46px !important;
+  min-height: 24px !important;
+  flex-shrink: 0;
+}
 
-      .fc-toggle input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-        position: absolute;
-      }
+.fc-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
 
-      .fc-toggle-slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0; left: 0;
-        width: 32px !important;
-        height: 32px !important;
-        background-color: #4b5563;
-        border-radius: 50% !important;
-        transition: background-color 0.2s ease, box-shadow 0.2s ease;
-      }
+.fc-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4b5563;
+  border-radius: 24px;
+  transition: background-color 0.25s ease;
+}
 
-      .fc-toggle-slider::before {
-        content: "";
-        position: absolute;
-        width: 12px !important;
-        height: 12px !important;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: white;
-        border-radius: 50% !important;
-        display: block !important;
-        box-shadow: none;
-        transition: none;
-      }
+.fc-toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+}
 
-      .fc-toggle input:checked + .fc-toggle-slider {
-        background-color: #10b981;
-        box-shadow: 0 0 8px rgba(16,185,129,0.5);
-      }
+.fc-toggle input:checked + .fc-toggle-slider {
+  background-color: #10b981;
+}
 
-      .fc-toggle input:checked + .fc-toggle-slider::before {
-        transform: translate(-50%, -50%);
-        background-color: white;
-      }
+.fc-toggle input:checked + .fc-toggle-slider::before {
+  transform: translateX(22px);
+}
 
       /* Select Dropdown */
       .fc-select {
