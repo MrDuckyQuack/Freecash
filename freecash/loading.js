@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Freecash Duck Welcome
 // @namespace    freecash-duck-welcome
-// @version      1.5.0
-// @description  Shows a cute duck loading screen on Freecash with floating ducks and balloons
+// @version      1.6.0
+// @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
@@ -47,74 +47,32 @@
       pointer-events: all !important;
       overflow: hidden !important;
     }
+    #duck-welcome-screen.duck-visible { opacity: 1 !important; }
+    #duck-welcome-screen.duck-hiding { opacity: 0 !important; pointer-events: none !important; }
 
-    #duck-welcome-screen.duck-visible {
-      opacity: 1 !important;
-    }
+    .duck-float-container { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; pointer-events: none !important; z-index: 1 !important; }
 
-    #duck-welcome-screen.duck-hiding {
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
+    .duck-main-content { position: relative !important; z-index: 2 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; }
 
-    /* Floating elements container */
-    .duck-float-container {
+    .duck-float, .balloon-float {
       position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      pointer-events: none !important;
-      z-index: 1 !important;
-    }
-    
-    /* Main content (stays above floats) */
-    .duck-main-content {
-      position: relative !important;
-      z-index: 2 !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      width: 100% !important;
-      height: 100% !important;
-    }
-    
-    /* Floating duck styles */
-    .duck-float {
-      position: absolute !important;
-      font-size: 40px !important;
-      opacity: 0.15 !important;
-      animation: floatAround linear infinite !important;
       user-select: none !important;
       pointer-events: none !important;
       filter: drop-shadow(0 5px 15px rgba(16,185,129,0.2)) !important;
+      animation-iteration-count: infinite !important;
+      animation-timing-function: ease-in-out !important;
     }
-    
-    /* Floating balloon styles */
-    .balloon-float {
-      position: absolute !important;
-      font-size: 32px !important;
-      opacity: 0.2 !important;
-      animation: floatBalloon linear infinite !important;
-      user-select: none !important;
-      pointer-events: none !important;
-      filter: drop-shadow(0 5px 15px rgba(255,255,255,0.1)) !important;
-    }
-    
-    @keyframes floatAround {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      25% { transform: translate(20px, -30px) rotate(5deg); }
-      50% { transform: translate(40px, 0) rotate(0deg); }
-      75% { transform: translate(20px, 30px) rotate(-5deg); }
-      100% { transform: translate(0, 0) rotate(0deg); }
-    }
-    
-    @keyframes floatBalloon {
-      0% { transform: translate(0, 0) rotate(-3deg); }
-      33% { transform: translate(-25px, -40px) rotate(3deg); }
-      66% { transform: translate(25px, -70px) rotate(-2deg); }
-      100% { transform: translate(0, 0) rotate(3deg); }
+
+    .duck-float { font-size: 40px !important; opacity: 0.15 !important; }
+    .balloon-float { font-size: 32px !important; opacity: 0.2 !important; filter: drop-shadow(0 5px 15px rgba(255,255,255,0.1)) !important; }
+
+    @keyframes floatAroundRandom {
+      0% { transform: translate(0px, 0px) rotate(0deg); }
+      20% { transform: translate(20px, -15px) rotate(5deg); }
+      40% { transform: translate(-25px, -20px) rotate(-5deg); }
+      60% { transform: translate(15px, 10px) rotate(3deg); }
+      80% { transform: translate(-10px, 25px) rotate(-3deg); }
+      100% { transform: translate(0px, 0px) rotate(0deg); }
     }
 
     .duck-emoji {
@@ -142,7 +100,6 @@
       background-size: 300% auto !important;
       -webkit-background-clip: text !important;
       -webkit-text-fill-color: transparent !important;
-      background-clip: text !important;
       animation: duckShimmer 2.5s linear infinite !important;
       margin: 0 0 12px 0 !important;
       text-align: center !important;
@@ -150,20 +107,9 @@
       z-index: 3 !important;
     }
 
-    @keyframes duckShimmer {
-      0%   { background-position: 0% center; }
-      100% { background-position: 300% center; }
-    }
+    @keyframes duckShimmer { 0% { background-position: 0% center; } 100% { background-position: 300% center; } }
 
-    .duck-sub {
-      color: #94a3b8 !important;
-      font-size: 18px !important;
-      letter-spacing: 2px !important;
-      font-weight: 300 !important;
-      margin: 0 0 36px 0 !important;
-      position: relative !important;
-      z-index: 3 !important;
-    }
+    .duck-sub { color: #94a3b8 !important; font-size: 18px !important; letter-spacing: 2px !important; font-weight: 300 !important; margin: 0 0 36px 0 !important; position: relative !important; z-index: 3 !important; }
 
     .duck-bar-wrap {
       width: 360px !important;
@@ -185,95 +131,33 @@
       background-size: 200% auto !important;
     }
 
-    .duck-bar-fill.duck-bar-animate {
-      animation: duckBarGrow 3.5s cubic-bezier(0.4,0,0.2,1) forwards,
-                 duckBarShine 1s linear infinite !important;
-    }
-
-    @keyframes duckBarGrow {
-      0%   { width: 0%; }
-      100% { width: 100%; }
-    }
-
-    @keyframes duckBarShine {
-      0%   { background-position: 0% center; }
-      100% { background-position: 200% center; }
-    }
-
-    .duck-footer {
-      position: absolute !important;
-      bottom: 32px !important;
-      color: #334155 !important;
-      font-size: 14px !important;
-      letter-spacing: 1px !important;
-      z-index: 3 !important;
-    }
+    .duck-footer { position: absolute !important; bottom: 32px !important; color: #334155 !important; font-size: 14px !important; letter-spacing: 1px !important; z-index: 3 !important; }
   `);
 
   function createFloatingElements(container) {
-    // Create floating ducks (8 of them)
-    for (let i = 0; i < 8; i++) {
-      const duck = document.createElement('div');
-      duck.className = 'duck-float';
-      
-      // Random duck emoji
-      const randomDuck = duckEmojis[Math.floor(Math.random() * duckEmojis.length)];
-      duck.textContent = randomDuck;
-      
-      // Random starting position
-      const left = Math.random() * 90 + 5; // 5% to 95%
-      const top = Math.random() * 90 + 5;   // 5% to 95%
-      
-      // Random animation duration (15-25 seconds)
-      const duration = Math.random() * 10 + 15;
-      
-      // Random animation delay (0-10 seconds)
-      const delay = Math.random() * 10;
-      
-      // Random size variation
-      const size = Math.random() * 20 + 30; // 30-50px
-      
-      duck.style.left = left + '%';
-      duck.style.top = top + '%';
-      duck.style.animationDuration = duration + 's';
-      duck.style.animationDelay = delay + 's';
-      duck.style.fontSize = size + 'px';
-      duck.style.opacity = Math.random() * 0.1 + 0.1; // 0.1 to 0.2
-      
-      container.appendChild(duck);
-    }
-    
-    // Create floating balloons (5 of them)
-    for (let j = 0; j < 5; j++) {
-      const balloon = document.createElement('div');
-      balloon.className = 'balloon-float';
-      
-      // Random balloon emoji
-      const randomBalloon = balloonEmojis[Math.floor(Math.random() * balloonEmojis.length)];
-      balloon.textContent = randomBalloon;
-      
-      // Random starting position
+    function createFloatElement(emojis, className, minSize, maxSize, minDuration, maxDuration, minDelay, maxDelay, minOpacity, maxOpacity) {
+      const el = document.createElement('div');
+      el.className = className;
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
       const left = Math.random() * 90 + 5;
       const top = Math.random() * 90 + 5;
-      
-      // Random animation duration (12-20 seconds)
-      const duration = Math.random() * 8 + 12;
-      
-      // Random animation delay
-      const delay = Math.random() * 8;
-      
-      // Random size variation
-      const size = Math.random() * 15 + 25; // 25-40px
-      
-      balloon.style.left = left + '%';
-      balloon.style.top = top + '%';
-      balloon.style.animationDuration = duration + 's';
-      balloon.style.animationDelay = delay + 's';
-      balloon.style.fontSize = size + 'px';
-      balloon.style.opacity = Math.random() * 0.1 + 0.15; // 0.15 to 0.25
-      
-      container.appendChild(balloon);
+      const size = Math.random() * (maxSize - minSize) + minSize;
+      const opacity = Math.random() * (maxOpacity - minOpacity) + minOpacity;
+      const duration = Math.random() * (maxDuration - minDuration) + minDuration;
+      const delay = Math.random() * (maxDelay - minDelay) + minDelay;
+
+      el.style.left = left + '%';
+      el.style.top = top + '%';
+      el.style.fontSize = size + 'px';
+      el.style.opacity = opacity;
+      el.style.animationDuration = duration + 's';
+      el.style.animationDelay = delay + 's';
+      el.style.animationName = 'floatAroundRandom';
+      container.appendChild(el);
     }
+
+    for (let i = 0; i < 8; i++) createFloatElement(duckEmojis, 'duck-float', 30, 50, 15, 25, 0, 10, 0.1, 0.25);
+    for (let i = 0; i < 5; i++) createFloatElement(balloonEmojis, 'balloon-float', 25, 40, 12, 20, 0, 8, 0.15, 0.3);
   }
 
   let activeTimer = null;
@@ -281,37 +165,26 @@
   let hasShownInitial = false;
 
   function showDuck() {
-    // Prevent multiple simultaneous shows
     if (isShowing) return;
-    
-    // Clear any pending timers
     if (activeTimer) clearTimeout(activeTimer);
 
-    // Remove existing overlay immediately if present
     const existing = document.getElementById('duck-welcome-screen');
     if (existing) existing.remove();
 
     isShowing = true;
-    
-    const msg   = duckMessages[Math.floor(Math.random() * duckMessages.length)];
+    const msg = duckMessages[Math.floor(Math.random() * duckMessages.length)];
     const emoji = duckEmojis[Math.floor(Math.random() * duckEmojis.length)];
 
-    // Build main container
     const el = document.createElement('div');
     el.id = 'duck-welcome-screen';
 
-    // Create floating elements container
     const floatContainer = document.createElement('div');
     floatContainer.className = 'duck-float-container';
-    
-    // Create main content container
+    createFloatingElements(floatContainer);
+
     const mainContent = document.createElement('div');
     mainContent.className = 'duck-main-content';
 
-    // Add floating elements
-    createFloatingElements(floatContainer);
-
-    // Build main content
     const emojiEl = document.createElement('span');
     emojiEl.className = 'duck-emoji';
     emojiEl.textContent = emoji;
@@ -326,56 +199,43 @@
 
     const barWrap = document.createElement('div');
     barWrap.className = 'duck-bar-wrap';
-
     const bar = document.createElement('div');
     bar.className = 'duck-bar-fill';
-    bar.style.width = '0%';
     barWrap.appendChild(bar);
 
     const footer = document.createElement('div');
     footer.className = 'duck-footer';
     footer.textContent = '🐤 Created by DuckyQuack';
 
-    // Assemble everything
     mainContent.appendChild(emojiEl);
     mainContent.appendChild(titleEl);
     mainContent.appendChild(subEl);
     mainContent.appendChild(barWrap);
     mainContent.appendChild(footer);
-    
+
     el.appendChild(floatContainer);
     el.appendChild(mainContent);
     document.body.appendChild(el);
 
-    // Fade in + start progress bar on next paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         el.classList.add('duck-visible');
-        const bar = el.querySelector('.duck-bar-fill');
-        if (bar) bar.classList.add('duck-bar-animate');
+        bar.style.transition = 'width 3.5s cubic-bezier(0.4,0,0.2,1)';
+        requestAnimationFrame(() => { bar.style.width = '100%'; });
       });
     });
 
-    // Fade out after 4 seconds
     activeTimer = setTimeout(() => {
       el.classList.add('duck-hiding');
-      setTimeout(() => {
-        el.remove();
-        isShowing = false;
-      }, 500);
+      setTimeout(() => { el.remove(); isShowing = false; }, 500);
     }, 4000);
   }
 
   function triggerAfterDelay() {
-    // Don't show if already showing
     if (isShowing) return;
-    
-    // Small delay to ensure everything is ready
     setTimeout(showDuck, 50);
   }
 
-  // ── Initial page load ──────────────────────────────────────────────
-  // Only show on initial page load, not on subsequent triggers
   if (!hasShownInitial) {
     if (document.readyState === 'complete') {
       hasShownInitial = true;
@@ -390,30 +250,11 @@
     }
   }
 
-  // ── SPA / client-side navigation (History API) ────────────────────
-  const _pushState    = history.pushState.bind(history);
+  const _pushState = history.pushState.bind(history);
   const _replaceState = history.replaceState.bind(history);
 
-  history.pushState = function (...args) {
-    _pushState(...args);
-    // Don't trigger on initial page load, only on subsequent navigations
-    if (hasShownInitial) {
-      triggerAfterDelay();
-    }
-  };
-
-  history.replaceState = function (...args) {
-    _replaceState(...args);
-    if (hasShownInitial) {
-      triggerAfterDelay();
-    }
-  };
-
-  // Also catch back/forward navigation
-  window.addEventListener('popstate', () => {
-    if (hasShownInitial) {
-      triggerAfterDelay();
-    }
-  });
+  history.pushState = function (...args) { _pushState(...args); if (hasShownInitial) triggerAfterDelay(); };
+  history.replaceState = function (...args) { _replaceState(...args); if (hasShownInitial) triggerAfterDelay(); };
+  window.addEventListener('popstate', () => { if (hasShownInitial) triggerAfterDelay(); });
 
 })();
