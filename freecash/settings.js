@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.5.5
+// @version      1.6.0
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -147,39 +147,70 @@
         -webkit-overflow-scrolling: touch;
       }
 
-      /* Coming Soon Tab */
+      /* Main Tab Styles - UPDATED with toggle */
+      .fc-main-section {
+        padding: 5px 0;
+      }
+
+      .fc-main-card {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(16,185,129,0.2);
+      }
+
+      .fc-main-card h4 {
+        margin: 0 0 15px 0;
+        color: #10b981;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid rgba(16,185,129,0.3);
+        padding-bottom: 8px;
+      }
+
+      .fc-main-card .fc-setting-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding: 5px 0;
+        min-height: 40px;
+      }
+
+      .fc-main-card .fc-setting-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #e5e7eb;
+        font-size: 14px;
+      }
+
+      .fc-main-card .fc-setting-label span {
+        font-size: 1.2em;
+      }
+
+      .fc-main-card .fc-setting-description {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 4px;
+        padding-left: 32px;
+        margin-bottom: 12px;
+      }
+
+      /* Coming Soon Duck (kept for charm) */
       .fc-coming-soon-duck {
         font-size: 48px;
         margin-bottom: 15px;
         animation: duckFloat 2s ease-in-out infinite;
+        opacity: 0.5;
       }
 
       @keyframes duckFloat {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
-      }
-
-      .fc-coming-soon-text {
-        font-size: 28px;
-        font-weight: bold;
-        color: #10b981;
-        margin: 10px 0;
-      }
-
-      .fc-progress-bar {
-        width: 100%;
-        height: 6px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 3px;
-        overflow: hidden;
-        margin: 15px 0;
-      }
-
-      .fc-progress-fill {
-        height: 100%;
-        width: 33%;
-        background: #10b981;
-        border-radius: 3px;
       }
 
       /* Support Tab Styles */
@@ -667,10 +698,11 @@
       borderPulseEnabled: true,
       showEmojis: true,
       decimalPrecision: 4,
-      updateSpeed: 'normal'
+      updateSpeed: 'normal',
+      showDuckWelcome: true // NEW: Duck welcome screen toggle (default: enabled)
     };
 
-    // Build modal with tabs (simplified HTML for better performance)
+    // Build modal with tabs - UPDATED Main tab with toggle
     modal.innerHTML = `
       <div class="fc-settings-modal-header">
         <h3><span>🦆</span> DuckyQuack Settings</h3>
@@ -683,14 +715,30 @@
         <button class="fc-settings-tab" data-tab="support"><span>❓</span> Support</button>
       </div>
       
-      <!-- Main Tab Content -->
+      <!-- Main Tab Content - UPDATED with Duck Welcome Toggle -->
       <div class="fc-settings-tab-content" id="fc-tab-main">
-        <div style="text-align: center;">
-          <div class="fc-coming-soon-duck">🦆✨</div>
-          <div class="fc-coming-soon-text">Coming Soon!</div>
-          <div class="fc-progress-bar"><div class="fc-progress-fill"></div></div>
-          <div style="color: #9ca3af; font-size: 14px; margin: 15px 0;">More features are being cooked...</div>
-          <div style="font-size: 24px; opacity: 0.5;">⚙️ 🎨 🛠️</div>
+        <div class="fc-main-section">
+          <div class="fc-main-card">
+            <h4><span>🦆</span> Welcome Screen</h4>
+            
+            <div class="fc-setting-item">
+              <span class="fc-setting-label">
+                <span>🎬</span> Show Duck Welcome Screen
+              </span>
+              <label class="fc-toggle">
+                <input type="checkbox" id="fc-toggle-duck-welcome" ${currentConfig.showDuckWelcome !== false ? 'checked' : ''}>
+                <span class="fc-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="fc-setting-description">
+              Show a cute duck loading screen with floating ducks and balloons when you first visit the site
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; opacity: 0.7;">
+              <div class="fc-coming-soon-duck">🦆✨</div>
+              <div style="color: #9ca3af; font-size: 13px;">More main features coming soon!</div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -834,6 +882,11 @@
       
       // Batch DOM updates
       requestAnimationFrame(() => {
+        // Main tab toggles
+        const duckWelcomeToggle = getCachedElement('fc-toggle-duck-welcome');
+        if (duckWelcomeToggle) duckWelcomeToggle.checked = latestConfig.showDuckWelcome !== false;
+        
+        // Performance tab toggles
         const animationsToggle = getCachedElement('fc-toggle-animations');
         if (animationsToggle) animationsToggle.checked = latestConfig.animationsEnabled !== false;
         
@@ -935,6 +988,10 @@
       saveBtn.addEventListener('click', () => {
         // Gather all settings
         const newConfig = {
+          // Main tab settings
+          showDuckWelcome: getCachedElement('fc-toggle-duck-welcome')?.checked ?? true,
+          
+          // Performance tab settings
           animationsEnabled: getCachedElement('fc-toggle-animations')?.checked ?? true,
           numberRollEnabled: getCachedElement('fc-toggle-number-roll')?.checked ?? true,
           duckDanceEnabled: getCachedElement('fc-toggle-duck-dance')?.checked ?? true,
@@ -959,6 +1016,9 @@
         if (window.userConfig) {
           Object.assign(window.userConfig, newConfig);
         }
+        
+        // Dispatch event for loading.js to listen to
+        window.dispatchEvent(new CustomEvent('duckConfigChanged', { detail: newConfig }));
         
         // Show save confirmation
         const originalHTML = saveBtn.innerHTML;
@@ -1044,7 +1104,7 @@
     // Initial load of settings
     loadSettingsIntoUI();
 
-    console.log('⚙️ Settings UI initialized with button');
+    console.log('⚙️ Settings UI initialized with button and duck welcome toggle');
   }
 
   // Start waiting for main script
