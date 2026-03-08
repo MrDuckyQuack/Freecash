@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.0
+// @version      1.1
 // @description  Settings UI for Freecash Progress Script
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -13,20 +13,66 @@
 (function () {
   'use strict';
 
-  console.log('⚙️ Settings UI loaded');
+  console.log('⚙️ Settings UI loading...');
 
   // Wait for main script to be ready
   function waitForMainScript() {
     if (typeof window.updateConfig === 'function' && typeof window.saveConfig === 'function') {
+      console.log('⚙️ Main script detected, initializing settings UI');
       initSettingsUI();
     } else {
+      console.log('⚙️ Waiting for main script...');
       setTimeout(waitForMainScript, 100);
     }
   }
 
   function initSettingsUI() {
-    // Add settings modal styles
+    // Add settings modal styles - including button styles
     GM_addStyle(`
+      /* Settings Button Styles */
+      .fc-settings-btn {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white !important;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 999998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+        transition: all 0.3s ease;
+        animation: settingsPop 0.5s ease;
+        backdrop-filter: blur(4px);
+      }
+
+      .fc-settings-btn:hover {
+        transform: rotate(90deg) scale(1.1);
+        box-shadow: 0 6px 20px rgba(16,185,129,0.6);
+        background: linear-gradient(135deg, #059669, #047857);
+      }
+
+      .fc-settings-btn:active {
+        transform: rotate(180deg) scale(0.95);
+      }
+
+      .fc-settings-btn .gear-icon {
+        color: white !important;
+        filter: brightness(0) invert(1);
+      }
+
+      @keyframes settingsPop {
+        0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+        70% { transform: scale(1.1) rotate(10deg); }
+        100% { transform: scale(1) rotate(0); opacity: 1; }
+      }
+
       /* Settings Modal Styles */
       .fc-settings-modal {
         position: fixed;
@@ -573,17 +619,52 @@
         from { opacity: 0; }
         to { opacity: 1; }
       }
+
+      /* Prevent body scroll when modal is open */
+      body.fc-modal-open {
+        overflow: hidden !important;
+      }
     `);
 
-    // Create modal elements
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'fc-settings-modal-overlay';
-    modalOverlay.id = 'fc-settings-modal-overlay';
-    modalOverlay.style.display = 'none';
+    // ========== CREATE SETTINGS BUTTON ==========
+    function createSettingsButton() {
+      if (!document.body) {
+        setTimeout(createSettingsButton, 50);
+        return;
+      }
 
-    const modal = document.createElement('div');
-    modal.className = 'fc-settings-modal';
-    modal.id = 'fc-settings-modal';
+      // Check if button already exists
+      if (document.getElementById('fc-settings-btn')) {
+        console.log('⚙️ Settings button already exists');
+        return;
+      }
+
+      // Create settings button with white gear icon
+      const settingsBtn = document.createElement('div');
+      settingsBtn.className = 'fc-settings-btn';
+      settingsBtn.id = 'fc-settings-btn';
+      settingsBtn.innerHTML = '<span class="gear-icon" style="color: white !important;">⚙️</span>';
+      settingsBtn.title = 'DuckyQuack Settings';
+      document.body.appendChild(settingsBtn);
+
+      // Settings button click handler
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        console.log('⚙️ Settings button clicked');
+        if (typeof window.toggleSettingsModal === 'function') {
+          window.toggleSettingsModal(true);
+        } else {
+          console.log('⚙️ toggleSettingsModal not available yet');
+        }
+      });
+
+      console.log('⚙️ Settings button created');
+    }
+
+    // Create button first
+    createSettingsButton();
+
+    // ========== CREATE MODAL ==========
     
     // Get current config from main script
     const currentConfig = window.userConfig || {
@@ -596,6 +677,16 @@
       updateSpeed: 'normal'
     };
 
+    // Create modal elements
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'fc-settings-modal-overlay';
+    modalOverlay.id = 'fc-settings-modal-overlay';
+    modalOverlay.style.display = 'none';
+
+    const modal = document.createElement('div');
+    modal.className = 'fc-settings-modal';
+    modal.id = 'fc-settings-modal';
+    
     // Build modal with tabs
     modal.innerHTML = `
       <div class="fc-settings-modal-header">
@@ -849,7 +940,11 @@
       faqItems.forEach(item => {
         const question = item.querySelector('.fc-faq-question');
         
-        question.addEventListener('click', () => {
+        // Remove any existing listeners
+        const newQuestion = question.cloneNode(true);
+        question.parentNode.replaceChild(newQuestion, question);
+        
+        newQuestion.addEventListener('click', () => {
           item.classList.toggle('expanded');
         });
       });
@@ -952,6 +1047,7 @@
 
     // Toggle modal function (exposed globally for main script)
     window.toggleSettingsModal = function(show) {
+      console.log('⚙️ toggleSettingsModal called with:', show);
       const isVisible = show !== undefined ? show : modal.style.display === 'none';
       
       if (isVisible) {
@@ -966,6 +1062,7 @@
         if (perfTabContent.style.display === 'block') {
           updatePrecisionDisplay();
         }
+        console.log('⚙️ Modal opened');
       } else {
         modal.classList.add('closing');
         modalOverlay.classList.add('closing');
@@ -974,6 +1071,7 @@
           modal.style.display = 'none';
           modalOverlay.style.display = 'none';
           document.body.classList.remove('fc-modal-open');
+          console.log('⚙️ Modal closed');
         }, 300);
       }
     };
@@ -994,7 +1092,7 @@
       }
     });
 
-    console.log('⚙️ Settings UI initialized');
+    console.log('⚙️ Settings UI fully initialized');
   }
 
   // Start waiting for main script
