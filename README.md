@@ -82,16 +82,36 @@ The loader script automatically fetches the latest version from GitHub. No need 
 - Enhanced number roll animations
 - Better decimal highlighting
 
+-------------------------------------------------------------------------------
+
 ## 👤 Author
 
 **DuckyQuack**
 
 - GitHub: [@MrDuckyQuack](https://github.com/MrDuckyQuack)
 
+-------------------------------------------------------------------------------
+
 ## 📜 License
 
 This project is open source and available to everyone! Feel free to modify and share.
 
----
+-------------------------------------------------------------------------------
+
+## 🐛 Bugs & Issues
+
+Found a bug? Something not working right? Let me know!
+
+📱 **Discord:** [Join Freecash Server](https://discord.gg/Y3zZrnEEN4) and Private Message real_mr.duck
+
+When reporting a bug, please include:
+- What happened
+- What should have happened
+- Screenshot (if possible)
+- Freecash page you were on
+
+I'll fix it as soon as possible! 🛠️
+
+-------------------------------------------------------------------------------
 
 ⭐ **Enjoy your progress bars!** ⭐
