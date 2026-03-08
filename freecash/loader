@@ -1,0 +1,8 @@
+// ==UserScript==
+// @match        https://freecash.com/*
+// @match        https://www.freecash.com/*
+// @run-at       document-start
+// @grant        GM_addStyle
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/freecash/settings.js
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/freecash/main.js
+// ==/UserScript==
