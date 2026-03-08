@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.6.9
+// @version      1.7.0
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -380,11 +380,11 @@
 
       .fc-setting-label span { font-size: 1.2em; }
 
-      /* ── FIX 3: Fully pill-shaped toggle ── */
+      /* Toggle – circular track (square aspect ratio) with round knob */
       .fc-toggle {
         position: relative;
         display: inline-block;
-        width: 52px;
+        width: 28px;       /* same as height → perfect circle track */
         height: 28px;
         flex-shrink: 0;
       }
@@ -397,25 +397,30 @@
         top: 0; left: 0; right: 0; bottom: 0;
         background-color: #4b5563;
         transition: background-color 0.2s ease;
-        border-radius: 28px;          /* fully rounded pill */
+        border-radius: 50%;           /* circle track */
       }
 
       .fc-toggle-slider::before {
         position: absolute;
         content: "";
-        height: 20px;
-        width: 20px;
-        left: 4px;
-        bottom: 4px;
+        height: 18px;
+        width: 18px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
         background-color: white;
-        transition: transform 0.2s ease;
-        border-radius: 50%;           /* perfect circle knob */
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        border-radius: 50%;           /* circle knob */
         will-change: transform;
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
       }
 
+      /* checked state: green track, knob turns into a tick-like smaller dot */
       .fc-toggle input:checked + .fc-toggle-slider { background-color: #10b981; }
-      .fc-toggle input:checked + .fc-toggle-slider::before { transform: translateX(24px); }
+      .fc-toggle input:checked + .fc-toggle-slider::before {
+        transform: translate(-50%, -50%) scale(0.7);
+        background-color: white;
+      }
 
       /* Select Dropdown */
       .fc-select {
@@ -861,46 +866,77 @@
       });
     }
 
-    // ── FIX 2: Drag-to-scroll tabs, scrollbar fully hidden ──
+    // Tab bar: smooth momentum drag + mouse-wheel horizontal scroll
     function initTabScrolling() {
       const container = document.querySelector('.fc-settings-tabs-container');
-      if (!container) return;
+      if (!container || container._fcScrollInit) return;
+      container._fcScrollInit = true;
 
-      let isDown = false, startX, scrollLeft;
+      // ── Mouse-wheel: scroll horizontally (deltaY → scrollLeft) ──
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        // support both vertical and horizontal wheel gestures
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        container.scrollLeft += delta;
+      }, { passive: false });
+
+      // ── Drag-to-scroll with momentum ──
+      let isDown = false;
+      let startX, startScrollLeft;
+      let velX = 0, lastX = 0, lastT = 0;
+      let rafId = null;
 
       container.addEventListener('mousedown', (e) => {
+        // don't hijack tab button clicks – only start drag on the container bg
+        if (e.target.closest('.fc-settings-tab')) return;
         isDown = true;
-        startX = e.pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
+        startX = e.pageX;
+        startScrollLeft = container.scrollLeft;
+        velX = 0; lastX = e.pageX; lastT = Date.now();
         container.style.cursor = 'grabbing';
+        if (rafId) cancelAnimationFrame(rafId);
         e.preventDefault();
       });
 
-      const stopDrag = () => { isDown = false; container.style.cursor = 'grab'; };
+      const stopDrag = () => {
+        if (!isDown) return;
+        isDown = false;
+        container.style.cursor = 'grab';
+        // kick off momentum glide
+        let v = velX;
+        function glide() {
+          if (Math.abs(v) < 0.5) return;
+          container.scrollLeft -= v;
+          v *= 0.88;             // friction
+          rafId = requestAnimationFrame(glide);
+        }
+        glide();
+      };
+
+      document.addEventListener('mouseup', stopDrag);
       container.addEventListener('mouseleave', stopDrag);
-      container.addEventListener('mouseup', stopDrag);
 
       container.addEventListener('mousemove', (e) => {
         if (!isDown) return;
         e.preventDefault();
-        const x = e.pageX - container.offsetLeft;
-        container.scrollLeft = scrollLeft - (x - startX) * 1.5;
+        const now = Date.now();
+        const dt  = Math.max(now - lastT, 1);
+        velX = (e.pageX - lastX) / dt * 16; // pixels per frame @60fps
+        lastX = e.pageX; lastT = now;
+        container.scrollLeft = startScrollLeft - (e.pageX - startX);
       });
 
-      // Touch support
+      // Touch support (momentum handled natively by the browser)
+      let tStartX, tScrollLeft;
       container.addEventListener('touchstart', (e) => {
-        isDown = true;
-        startX = e.touches[0].pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
+        tStartX = e.touches[0].pageX;
+        tScrollLeft = container.scrollLeft;
+        if (rafId) cancelAnimationFrame(rafId);
       }, { passive: true });
 
-      container.addEventListener('touchend',    () => { isDown = false; });
-      container.addEventListener('touchcancel', () => { isDown = false; });
-
       container.addEventListener('touchmove', (e) => {
-        if (!isDown) return;
-        const x = e.touches[0].pageX - container.offsetLeft;
-        container.scrollLeft = scrollLeft - (x - startX) * 1.5;
+        const dx = tStartX - e.touches[0].pageX;
+        container.scrollLeft = tScrollLeft + dx;
       }, { passive: true });
     }
 
