@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.5
+// @version      1.6
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -393,18 +393,20 @@
         font-size: 1.2em;
       }
 
-      /* Circular Toggle Switch */
+      /* Circular Toggle Switch - IMPROVED */
       .fc-toggle {
         position: relative;
         display: inline-block;
         width: 52px;
         height: 28px;
+        flex-shrink: 0;
       }
 
       .fc-toggle input {
         opacity: 0;
         width: 0;
         height: 0;
+        position: absolute;
       }
 
       .fc-toggle-slider {
@@ -439,7 +441,6 @@
 
       input:checked + .fc-toggle-slider:before {
         transform: translateX(24px);
-        background-color: white;
       }
 
       /* Select Dropdown */
@@ -573,6 +574,13 @@
         from { opacity: 0; }
         to { opacity: 1; }
       }
+
+      /* Fix for settings button not being blurred */
+      .fc-settings-btn {
+        backdrop-filter: none !important;
+        filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
     `);
 
     // Create modal elements
@@ -585,8 +593,22 @@
     modal.className = 'fc-settings-modal';
     modal.id = 'fc-settings-modal';
     
-    // Get current config from main script
-    const currentConfig = window.userConfig || {
+    // Get current config from main script or localStorage
+    function loadConfigFromStorage() {
+      try {
+        const savedConfig = localStorage.getItem('freecashProgressConfig');
+        if (savedConfig) {
+          return JSON.parse(savedConfig);
+        }
+      } catch (e) {
+        console.error('Error loading config from storage:', e);
+      }
+      return null;
+    }
+
+    // Load config with priority: window.userConfig > localStorage > defaults
+    const storedConfig = loadConfigFromStorage();
+    const currentConfig = window.userConfig || storedConfig || {
       animationsEnabled: true,
       numberRollEnabled: true,
       duckDanceEnabled: true,
@@ -842,6 +864,40 @@
     modal.style.display = 'none';
     modalOverlay.style.display = 'none';
 
+    // Function to load settings into UI
+    function loadSettingsIntoUI() {
+      // Get the latest config from main script or localStorage
+      const latestStored = loadConfigFromStorage();
+      const latestConfig = window.userConfig || latestStored || currentConfig;
+      
+      // Update all toggle switches
+      const animationsToggle = document.getElementById('fc-toggle-animations');
+      if (animationsToggle) animationsToggle.checked = latestConfig.animationsEnabled !== false;
+      
+      const numberRollToggle = document.getElementById('fc-toggle-number-roll');
+      if (numberRollToggle) numberRollToggle.checked = latestConfig.numberRollEnabled !== false;
+      
+      const duckDanceToggle = document.getElementById('fc-toggle-duck-dance');
+      if (duckDanceToggle) duckDanceToggle.checked = latestConfig.duckDanceEnabled !== false;
+      
+      const borderPulseToggle = document.getElementById('fc-toggle-border-pulse');
+      if (borderPulseToggle) borderPulseToggle.checked = latestConfig.borderPulseEnabled !== false;
+      
+      const emojisToggle = document.getElementById('fc-toggle-emojis');
+      if (emojisToggle) emojisToggle.checked = latestConfig.showEmojis !== false;
+      
+      const precisionSlider = document.getElementById('fc-slider-precision');
+      if (precisionSlider) {
+        precisionSlider.value = latestConfig.decimalPrecision || 4;
+        updatePrecisionDisplay();
+      }
+      
+      const speedSelect = document.getElementById('fc-select-speed');
+      if (speedSelect) {
+        speedSelect.value = latestConfig.updateSpeed || 'normal';
+      }
+    }
+
     // FAQ Accordion functionality
     function initFaqAccordion() {
       const faqItems = document.querySelectorAll('.fc-faq-item');
@@ -849,9 +905,14 @@
       faqItems.forEach(item => {
         const question = item.querySelector('.fc-faq-question');
         
-        question.addEventListener('click', () => {
+        // Remove existing listeners to prevent duplicates
+        question.removeEventListener('click', question.clickHandler);
+        
+        question.clickHandler = () => {
           item.classList.toggle('expanded');
-        });
+        };
+        
+        question.addEventListener('click', question.clickHandler);
       });
     }
 
@@ -875,6 +936,8 @@
           mainTab.style.display = 'block';
         } else if (tabName === 'performance') {
           perfTab.style.display = 'block';
+          // Load latest settings when switching to performance tab
+          loadSettingsIntoUI();
           updatePrecisionDisplay();
         } else if (tabName === 'support') {
           supportTab.style.display = 'block';
@@ -912,9 +975,22 @@
           updateSpeed: document.getElementById('fc-select-speed')?.value ?? 'normal'
         };
         
+        // Save to localStorage
+        try {
+          localStorage.setItem('freecashProgressConfig', JSON.stringify(newConfig));
+          console.log('💾 Settings saved to localStorage:', newConfig);
+        } catch (e) {
+          console.error('Error saving to localStorage:', e);
+        }
+        
         // Update config in main script
         if (typeof window.updateConfig === 'function') {
           window.updateConfig(newConfig);
+        }
+        
+        // Also update window.userConfig if it exists
+        if (window.userConfig) {
+          Object.assign(window.userConfig, newConfig);
         }
         
         // Show save confirmation
@@ -955,6 +1031,9 @@
       const isVisible = show !== undefined ? show : modal.style.display === 'none';
       
       if (isVisible) {
+        // Load the latest settings before showing modal
+        loadSettingsIntoUI();
+        
         modal.classList.remove('closing');
         modalOverlay.classList.remove('closing');
         modal.style.display = 'block';
@@ -993,6 +1072,9 @@
         window.toggleSettingsModal(false);
       }
     });
+
+    // Initial load of settings
+    loadSettingsIntoUI();
 
     console.log('⚙️ Settings UI initialized');
   }
