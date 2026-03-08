@@ -57,7 +57,7 @@ Add this loader script to your Tampermonkey. It will automatically fetch the lat
     'use strict';
     console.log('🦆 Freecash Progress Loader: Loading main script from GitHub...');
 })();
-
+```
 
 This version will automatically update whenever I push improvements! 🚀
 
@@ -66,7 +66,6 @@ If you prefer to read the code or don't want auto-updates, use the main script d
 https://github.com/MrDuckyQuack/Freecash-Progress-Percentage/blob/main/freecash-script
 
 -------------------------------------------------------------------------------
-
 
 ## 🔄 Auto-Updates
 
