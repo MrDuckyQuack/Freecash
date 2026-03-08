@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.2
+// @version      1.3
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -781,16 +781,18 @@
 
     // ========== CREATE MODAL ==========
     
-    // Get current config from main script
-    const currentConfig = window.userConfig || {
-      animationsEnabled: true,
-      numberRollEnabled: true,
-      duckDanceEnabled: true,
-      borderPulseEnabled: true,
-      showEmojis: true,
-      decimalPrecision: 4,
-      updateSpeed: 'normal'
-    };
+    // Function to get current config from main script
+    function getCurrentConfig() {
+      return window.userConfig || {
+        animationsEnabled: true,
+        numberRollEnabled: true,
+        duckDanceEnabled: true,
+        borderPulseEnabled: true,
+        showEmojis: true,
+        decimalPrecision: 4,
+        updateSpeed: 'normal'
+      };
+    }
 
     // Track if settings require refresh
     let refreshRequired = false;
@@ -883,10 +885,8 @@
         }
         
         // Check if refresh is needed (for settings that require page reload)
-        const oldPrecision = currentConfig.decimalPrecision;
-        const newPrecision = parseInt(document.getElementById('fc-slider-precision')?.value ?? '4');
-        
-        if (oldPrecision !== newPrecision) {
+        const oldConfig = getCurrentConfig();
+        if (oldConfig.decimalPrecision !== newConfig.decimalPrecision) {
           refreshRequired = true;
         }
         
@@ -912,247 +912,252 @@
     modal.className = 'fc-settings-modal';
     modal.id = 'fc-settings-modal';
     
-    // Build modal with tabs - removed save button, added auto-save indicator
-    modal.innerHTML = `
-      <div class="fc-settings-modal-header">
-        <h3>
-          <span>🦆</span>
-          DuckyQuack Settings
-        </h3>
-        <button class="fc-settings-modal-close" id="fc-settings-modal-close">✕</button>
-      </div>
+    // Build modal with tabs
+    function buildModal() {
+      const config = getCurrentConfig();
       
-      <div class="fc-settings-tabs">
-        <button class="fc-settings-tab active" data-tab="main">
-          <span>🏠</span> Main
-        </button>
-        <button class="fc-settings-tab" data-tab="performance">
-          <span>⚡</span> Performance
-        </button>
-        <button class="fc-settings-tab" data-tab="support">
-          <span>❓</span> Support
-        </button>
-      </div>
-      
-      <!-- Main Tab Content (Coming Soon) -->
-      <div class="fc-settings-tab-content" id="fc-tab-main">
-        <div style="text-align: center;">
-          <div class="fc-coming-soon-duck">🦆✨</div>
-          <div class="fc-coming-soon-text">Coming Soon!</div>
-          <div class="fc-progress-bar">
-            <div class="fc-progress-fill"></div>
-          </div>
-          <div style="color: #9ca3af; font-size: 14px; margin: 15px 0;">
-            More features are being cooked...
-          </div>
-          <div style="font-size: 24px; opacity: 0.5;">
-            ⚙️ 🎨 🛠️
-          </div>
+      modal.innerHTML = `
+        <div class="fc-settings-modal-header">
+          <h3>
+            <span>🦆</span>
+            DuckyQuack Settings
+          </h3>
+          <button class="fc-settings-modal-close" id="fc-settings-modal-close">✕</button>
         </div>
-      </div>
-      
-      <!-- Performance Tab Content -->
-      <div class="fc-settings-tab-content" id="fc-tab-performance" style="display: none;">
-        <div class="fc-performance-section">
-          <div class="fc-setting-group">
-            <h4><span>🎨</span> Visual Effects</h4>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>🔄</span> Enable All Animations
-              </span>
-              <label class="fc-toggle">
-                <input type="checkbox" id="fc-toggle-animations" ${currentConfig.animationsEnabled ? 'checked' : ''}>
-                <span class="fc-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="fc-setting-description">Master switch for all animations</div>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>🔢</span> Number Roll Effect
-              </span>
-              <label class="fc-toggle">
-                <input type="checkbox" id="fc-toggle-number-roll" ${currentConfig.numberRollEnabled ? 'checked' : ''}>
-                <span class="fc-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="fc-setting-description">Smooth counting animation when numbers change</div>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>🦆</span> Duck Dance at 100%
-              </span>
-              <label class="fc-toggle">
-                <input type="checkbox" id="fc-toggle-duck-dance" ${currentConfig.duckDanceEnabled ? 'checked' : ''}>
-                <span class="fc-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="fc-setting-description">Celebration animation when reaching 100%</div>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>💫</span> Border Pulse Effect
-              </span>
-              <label class="fc-toggle">
-                <input type="checkbox" id="fc-toggle-border-pulse" ${currentConfig.borderPulseEnabled ? 'checked' : ''}>
-                <span class="fc-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="fc-setting-description">Pulsing glow effect on progress borders</div>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>😊</span> Show Progress Emojis
-              </span>
-              <label class="fc-toggle">
-                <input type="checkbox" id="fc-toggle-emojis" ${currentConfig.showEmojis ? 'checked' : ''}>
-                <span class="fc-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="fc-setting-description">Display emojis based on progress (🥚, 🐢, 🚀, etc.)</div>
-          </div>
-          
-          <div class="fc-setting-group">
-            <h4><span>⚙️</span> Performance Settings</h4>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>🎯</span> Decimal Precision
-              </span>
-              <div class="fc-slider-container">
-                <input type="range" id="fc-slider-precision" class="fc-slider" min="0" max="6" value="${currentConfig.decimalPrecision}" step="1">
-                <span class="fc-slider-value" id="fc-precision-value">${currentConfig.decimalPrecision}</span>
-              </div>
-            </div>
-            <div class="fc-setting-description">Number of decimal places to show (0-6) - requires refresh</div>
-            
-            <div class="fc-setting-item">
-              <span class="fc-setting-label">
-                <span>⏱️</span> Update Speed
-              </span>
-              <select id="fc-select-speed" class="fc-select">
-                <option value="slow" ${currentConfig.updateSpeed === 'slow' ? 'selected' : ''}>Slow</option>
-                <option value="normal" ${currentConfig.updateSpeed === 'normal' ? 'selected' : ''}>Normal</option>
-                <option value="fast" ${currentConfig.updateSpeed === 'fast' ? 'selected' : ''}>Fast</option>
-              </select>
-            </div>
-            <div class="fc-setting-description">How frequently progress updates (fast may use more CPU)</div>
-          </div>
-          
-          <!-- Auto-save indicator -->
-          <div class="fc-auto-save-indicator">
-            <span>●</span> Auto-save enabled
-            <span>●</span>
-          </div>
+        
+        <div class="fc-settings-tabs">
+          <button class="fc-settings-tab active" data-tab="main">
+            <span>🏠</span> Main
+          </button>
+          <button class="fc-settings-tab" data-tab="performance">
+            <span>⚡</span> Performance
+          </button>
+          <button class="fc-settings-tab" data-tab="support">
+            <span>❓</span> Support
+          </button>
         </div>
-      </div>
-      
-      <!-- Support Tab Content -->
-      <div class="fc-settings-tab-content" id="fc-tab-support" style="display: none;">
-        <div class="fc-support-section">
-          <div class="fc-support-card">
-            <h4><span>❓</span> Frequently Asked Questions</h4>
-            
-            <div class="fc-faq-item" id="faq-1">
-              <div class="fc-faq-question">
-                <span class="fc-faq-question-content">
-                  <span>🦆</span> Why isn't my progress showing?
-                </span>
-                <span class="fc-faq-arrow">▶</span>
-              </div>
-              <div class="fc-faq-answer">
-                Make sure you're on a page with progress bars (like offers). The script automatically detects them. Try refreshing the page.
-              </div>
+        
+        <!-- Main Tab Content (Coming Soon) -->
+        <div class="fc-settings-tab-content" id="fc-tab-main">
+          <div style="text-align: center;">
+            <div class="fc-coming-soon-duck">🦆✨</div>
+            <div class="fc-coming-soon-text">Coming Soon!</div>
+            <div class="fc-progress-bar">
+              <div class="fc-progress-fill"></div>
             </div>
-            
-            <div class="fc-faq-item" id="faq-2">
-              <div class="fc-faq-question">
-                <span class="fc-faq-question-content">
-                  <span>🎨</span> Can I change the colors?
-                </span>
-                <span class="fc-faq-arrow">▶</span>
-              </div>
-              <div class="fc-faq-answer">
-                Coming soon! Check the Performance tab for animation settings. Color customization will be in a future update.
-              </div>
+            <div style="color: #9ca3af; font-size: 14px; margin: 15px 0;">
+              More features are being cooked...
             </div>
-            
-            <div class="fc-faq-item" id="faq-3">
-              <div class="fc-faq-question">
-                <span class="fc-faq-question-content">
-                  <span>⚡</span> The script is slowing down my browser
-                </span>
-                <span class="fc-faq-arrow">▶</span>
-              </div>
-              <div class="fc-faq-answer">
-                Go to the Performance tab and disable animations or reduce update speed. You can also turn off individual effects.
-              </div>
-            </div>
-            
-            <div class="fc-faq-item" id="faq-4">
-              <div class="fc-faq-question">
-                <span class="fc-faq-question-content">
-                  <span>🔄</span> How do I reset settings?
-                </span>
-                <span class="fc-faq-arrow">▶</span>
-              </div>
-              <div class="fc-faq-answer">
-                Click "Reset to Defaults" in the Performance tab, or clear your browser's localStorage for this site.
-              </div>
-            </div>
-          </div>
-          
-          <div class="fc-support-card">
-            <h4><span>💬</span> Need More Help?</h4>
-            
-            <a href="https://discord.gg/Y3zZrnEEN4" target="_blank" class="fc-discord-link">
-              <span>💬</span>
-              <span style="flex: 1;">Join Freecash Discord</span>
-              <span>↗</span>
-            </a>
-            
-            <div class="fc-pm-note">
-              <strong>📨 DuckyQuack Support:</strong><br>
-              Once you're in the Freecash Discord, send a Private Message to <strong>@real_mr.duck</strong> with:
-              <ul style="margin-top: 8px; padding-left: 20px;">
-                <li>A description of your issue</li>
-                <li>Screenshots (if applicable)</li>
-                <li>Your browser name and version</li>
-              </ul>
-              I'll get back to you as soon as possible! 🦆
-            </div>
-            
-            <div class="fc-contact-options">
-              <button class="fc-contact-btn primary" id="fc-copy-username">
-                <span>📋</span> Copy Username
-              </button>
-              <button class="fc-contact-btn secondary" id="fc-open-discord">
-                <span>💬</span> Open Discord
-              </button>
-            </div>
-          </div>
-          
-          <div class="fc-support-card">
-            <h4><span>🐛</span> Report a Bug</h4>
-            <div style="color: #d1d5db; font-size: 13px; line-height: 1.6;">
-              Found a bug? Please message me on Discord with:
-              <ul style="margin-top: 8px; padding-left: 20px;">
-                <li>What happened</li>
-                <li>What you expected to happen</li>
-                <li>Steps to reproduce</li>
-                <li>Browser and OS</li>
-              </ul>
+            <div style="font-size: 24px; opacity: 0.5;">
+              ⚙️ 🎨 🛠️
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="fc-settings-modal-footer">
-        Made with 🦆 by DuckyQuack | v3.5
-      </div>
-    `;
+        
+        <!-- Performance Tab Content -->
+        <div class="fc-settings-tab-content" id="fc-tab-performance" style="display: none;">
+          <div class="fc-performance-section">
+            <div class="fc-setting-group">
+              <h4><span>🎨</span> Visual Effects</h4>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>🔄</span> Enable All Animations
+                </span>
+                <label class="fc-toggle">
+                  <input type="checkbox" id="fc-toggle-animations" ${config.animationsEnabled ? 'checked' : ''}>
+                  <span class="fc-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="fc-setting-description">Master switch for all animations</div>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>🔢</span> Number Roll Effect
+                </span>
+                <label class="fc-toggle">
+                  <input type="checkbox" id="fc-toggle-number-roll" ${config.numberRollEnabled ? 'checked' : ''}>
+                  <span class="fc-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="fc-setting-description">Smooth counting animation when numbers change</div>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>🦆</span> Duck Dance at 100%
+                </span>
+                <label class="fc-toggle">
+                  <input type="checkbox" id="fc-toggle-duck-dance" ${config.duckDanceEnabled ? 'checked' : ''}>
+                  <span class="fc-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="fc-setting-description">Celebration animation when reaching 100%</div>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>💫</span> Border Pulse Effect
+                </span>
+                <label class="fc-toggle">
+                  <input type="checkbox" id="fc-toggle-border-pulse" ${config.borderPulseEnabled ? 'checked' : ''}>
+                  <span class="fc-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="fc-setting-description">Pulsing glow effect on progress borders</div>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>😊</span> Show Progress Emojis
+                </span>
+                <label class="fc-toggle">
+                  <input type="checkbox" id="fc-toggle-emojis" ${config.showEmojis ? 'checked' : ''}>
+                  <span class="fc-toggle-slider"></span>
+                </label>
+              </div>
+              <div class="fc-setting-description">Display emojis based on progress (🥚, 🐢, 🚀, etc.)</div>
+            </div>
+            
+            <div class="fc-setting-group">
+              <h4><span>⚙️</span> Performance Settings</h4>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>🎯</span> Decimal Precision
+                </span>
+                <div class="fc-slider-container">
+                  <input type="range" id="fc-slider-precision" class="fc-slider" min="0" max="6" value="${config.decimalPrecision}" step="1">
+                  <span class="fc-slider-value" id="fc-precision-value">${config.decimalPrecision}</span>
+                </div>
+              </div>
+              <div class="fc-setting-description">Number of decimal places to show (0-6) - requires refresh</div>
+              
+              <div class="fc-setting-item">
+                <span class="fc-setting-label">
+                  <span>⏱️</span> Update Speed
+                </span>
+                <select id="fc-select-speed" class="fc-select">
+                  <option value="slow" ${config.updateSpeed === 'slow' ? 'selected' : ''}>Slow</option>
+                  <option value="normal" ${config.updateSpeed === 'normal' ? 'selected' : ''}>Normal</option>
+                  <option value="fast" ${config.updateSpeed === 'fast' ? 'selected' : ''}>Fast</option>
+                </select>
+              </div>
+              <div class="fc-setting-description">How frequently progress updates (fast may use more CPU)</div>
+            </div>
+            
+            <!-- Auto-save indicator -->
+            <div class="fc-auto-save-indicator">
+              <span>●</span> Auto-save enabled
+              <span>●</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Support Tab Content -->
+        <div class="fc-settings-tab-content" id="fc-tab-support" style="display: none;">
+          <div class="fc-support-section">
+            <div class="fc-support-card">
+              <h4><span>❓</span> Frequently Asked Questions</h4>
+              
+              <div class="fc-faq-item" id="faq-1">
+                <div class="fc-faq-question">
+                  <span class="fc-faq-question-content">
+                    <span>🦆</span> Why isn't my progress showing?
+                  </span>
+                  <span class="fc-faq-arrow">▶</span>
+                </div>
+                <div class="fc-faq-answer">
+                  Make sure you're on a page with progress bars (like offers). The script automatically detects them. Try refreshing the page.
+                </div>
+              </div>
+              
+              <div class="fc-faq-item" id="faq-2">
+                <div class="fc-faq-question">
+                  <span class="fc-faq-question-content">
+                    <span>🎨</span> Can I change the colors?
+                  </span>
+                  <span class="fc-faq-arrow">▶</span>
+                </div>
+                <div class="fc-faq-answer">
+                  Coming soon! Check the Performance tab for animation settings. Color customization will be in a future update.
+                </div>
+              </div>
+              
+              <div class="fc-faq-item" id="faq-3">
+                <div class="fc-faq-question">
+                  <span class="fc-faq-question-content">
+                    <span>⚡</span> The script is slowing down my browser
+                  </span>
+                  <span class="fc-faq-arrow">▶</span>
+                </div>
+                <div class="fc-faq-answer">
+                  Go to the Performance tab and disable animations or reduce update speed. You can also turn off individual effects.
+                </div>
+              </div>
+              
+              <div class="fc-faq-item" id="faq-4">
+                <div class="fc-faq-question">
+                  <span class="fc-faq-question-content">
+                    <span>🔄</span> How do I reset settings?
+                  </span>
+                  <span class="fc-faq-arrow">▶</span>
+                </div>
+                <div class="fc-faq-answer">
+                  Click "Reset to Defaults" in the Performance tab, or clear your browser's localStorage for this site.
+                </div>
+              </div>
+            </div>
+            
+            <div class="fc-support-card">
+              <h4><span>💬</span> Need More Help?</h4>
+              
+              <a href="https://discord.gg/Y3zZrnEEN4" target="_blank" class="fc-discord-link">
+                <span>💬</span>
+                <span style="flex: 1;">Join Freecash Discord</span>
+                <span>↗</span>
+              </a>
+              
+              <div class="fc-pm-note">
+                <strong>📨 DuckyQuack Support:</strong><br>
+                Once you're in the Freecash Discord, send a Private Message to <strong>@real_mr.duck</strong> with:
+                <ul style="margin-top: 8px; padding-left: 20px;">
+                  <li>A description of your issue</li>
+                  <li>Screenshots (if applicable)</li>
+                  <li>Your browser name and version</li>
+                </ul>
+                I'll get back to you as soon as possible! 🦆
+              </div>
+              
+              <div class="fc-contact-options">
+                <button class="fc-contact-btn primary" id="fc-copy-username">
+                  <span>📋</span> Copy Username
+                </button>
+                <button class="fc-contact-btn secondary" id="fc-open-discord">
+                  <span>💬</span> Open Discord
+                </button>
+              </div>
+            </div>
+            
+            <div class="fc-support-card">
+              <h4><span>🐛</span> Report a Bug</h4>
+              <div style="color: #d1d5db; font-size: 13px; line-height: 1.6;">
+                Found a bug? Please message me on Discord with:
+                <ul style="margin-top: 8px; padding-left: 20px;">
+                  <li>What happened</li>
+                  <li>What you expected to happen</li>
+                  <li>Steps to reproduce</li>
+                  <li>Browser and OS</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="fc-settings-modal-footer">
+          Made with 🦆 by DuckyQuack | v3.5
+        </div>
+      `;
+    }
 
+    buildModal();
     document.body.appendChild(modalOverlay);
     document.body.appendChild(modal);
 
@@ -1267,6 +1272,84 @@
     // Toggle modal function (exposed globally for main script)
     window.toggleSettingsModal = function(show) {
       console.log('⚙️ toggleSettingsModal called with:', show);
+      
+      // Rebuild modal to get latest config
+      if (show) {
+        buildModal();
+        // Re-attach event listeners after rebuild
+        setTimeout(() => {
+          // Re-attach tab listeners
+          const newTabs = modal.querySelectorAll('.fc-settings-tab');
+          const newMainTab = document.getElementById('fc-tab-main');
+          const newPerfTab = document.getElementById('fc-tab-performance');
+          const newSupportTab = document.getElementById('fc-tab-support');
+          
+          newTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+              newTabs.forEach(t => t.classList.remove('active'));
+              tab.classList.add('active');
+              
+              newMainTab.style.display = 'none';
+              newPerfTab.style.display = 'none';
+              newSupportTab.style.display = 'none';
+              
+              const tabName = tab.dataset.tab;
+              if (tabName === 'main') {
+                newMainTab.style.display = 'block';
+              } else if (tabName === 'performance') {
+                newPerfTab.style.display = 'block';
+                updatePrecisionDisplay();
+              } else if (tabName === 'support') {
+                newSupportTab.style.display = 'block';
+                setTimeout(initFaqAccordion, 50);
+              }
+            });
+          });
+
+          // Re-attach auto-save listeners
+          const newPrecisionSlider = document.getElementById('fc-slider-precision');
+          if (newPrecisionSlider) {
+            newPrecisionSlider.addEventListener('input', () => {
+              updatePrecisionDisplay();
+              triggerAutoSave();
+            });
+          }
+
+          toggleIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+              element.addEventListener('change', triggerAutoSave);
+            }
+          });
+
+          const newSpeedSelect = document.getElementById('fc-select-speed');
+          if (newSpeedSelect) {
+            newSpeedSelect.addEventListener('change', triggerAutoSave);
+          }
+
+          // Re-attach support buttons
+          const newCopyBtn = document.getElementById('fc-copy-username');
+          if (newCopyBtn) {
+            newCopyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText('@real_mr.duck').then(() => {
+                const originalText = newCopyBtn.innerHTML;
+                newCopyBtn.innerHTML = '<span>✅</span> Copied!';
+                setTimeout(() => {
+                  newCopyBtn.innerHTML = originalText;
+                }, 2000);
+              });
+            });
+          }
+
+          const newDiscordBtn = document.getElementById('fc-open-discord');
+          if (newDiscordBtn) {
+            newDiscordBtn.addEventListener('click', () => {
+              window.open('https://discord.gg/Y3zZrnEEN4', '_blank');
+            });
+          }
+        }, 50);
+      }
+      
       const isVisible = show !== undefined ? show : modal.style.display === 'none';
       
       if (isVisible) {
@@ -1278,7 +1361,7 @@
         document.body.classList.add('fc-modal-open');
         
         const perfTabContent = document.getElementById('fc-tab-performance');
-        if (perfTabContent.style.display === 'block') {
+        if (perfTabContent && perfTabContent.style.display === 'block') {
           updatePrecisionDisplay();
         }
         console.log('⚙️ Modal opened');
