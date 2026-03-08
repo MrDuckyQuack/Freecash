@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Welcome
 // @namespace    freecash-duck-welcome
-// @version      1.4.2
+// @version      1.4.3
 // @description  Shows a cute duck loading screen on Freecash after page load and navigation
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -140,8 +140,13 @@
   `);
 
   let activeTimer = null;
+  let isShowing = false;
+  let hasShownInitial = false;
 
   function showDuck() {
+    // Prevent multiple simultaneous shows
+    if (isShowing) return;
+    
     // Clear any pending timers
     if (activeTimer) clearTimeout(activeTimer);
 
@@ -149,6 +154,8 @@
     const existing = document.getElementById('duck-welcome-screen');
     if (existing) existing.remove();
 
+    isShowing = true;
+    
     const msg   = duckMessages[Math.floor(Math.random() * duckMessages.length)];
     const emoji = duckEmojis[Math.floor(Math.random() * duckEmojis.length)];
 
@@ -178,19 +185,35 @@
     // Fade out after 4 seconds
     activeTimer = setTimeout(() => {
       el.classList.add('duck-hiding');
-      setTimeout(() => el.remove(), 500);
+      setTimeout(() => {
+        el.remove();
+        isShowing = false;
+      }, 500);
     }, 4000);
   }
 
   function triggerAfterDelay() {
-    setTimeout(showDuck, 10);
+    // Don't show if already showing
+    if (isShowing) return;
+    
+    // Small delay to ensure everything is ready
+    setTimeout(showDuck, 50);
   }
 
   // ── Initial page load ──────────────────────────────────────────────
-  if (document.readyState === 'complete') {
-    triggerAfterDelay();
-  } else {
-    window.addEventListener('load', triggerAfterDelay, { once: true });
+  // Only show on initial page load, not on subsequent triggers
+  if (!hasShownInitial) {
+    if (document.readyState === 'complete') {
+      hasShownInitial = true;
+      triggerAfterDelay();
+    } else {
+      window.addEventListener('load', () => {
+        if (!hasShownInitial) {
+          hasShownInitial = true;
+          triggerAfterDelay();
+        }
+      }, { once: true });
+    }
   }
 
   // ── SPA / client-side navigation (History API) ────────────────────
@@ -200,15 +223,26 @@
 
   history.pushState = function (...args) {
     _pushState(...args);
-    triggerAfterDelay();
+    // Don't trigger on initial page load, only on subsequent navigations
+    if (hasShownInitial) {
+      triggerAfterDelay();
+    }
   };
 
   history.replaceState = function (...args) {
     _replaceState(...args);
-    triggerAfterDelay();
+    // Don't trigger on initial page load, only on subsequent navigations
+    if (hasShownInitial) {
+      triggerAfterDelay();
+    }
   };
 
   // Also catch back/forward navigation
-  window.addEventListener('popstate', triggerAfterDelay);
+  window.addEventListener('popstate', () => {
+    // Don't trigger on initial page load
+    if (hasShownInitial) {
+      triggerAfterDelay();
+    }
+  });
 
 })();
