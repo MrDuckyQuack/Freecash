@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Percentage with Colored Borders - Made by DuckyQuack
 // @namespace    freecash-percent-4dec
-// @version      3.5
+// @version      3.5.2
 // @description  Show progress percentage with colored container borders and duck dance at 100% - Customized by DuckyQuack
 // @match        https://freecash.com/*
 // @match        https://www.freecash.com/*
