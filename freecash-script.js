@@ -9,7 +9,7 @@
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
-// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/others/settings.js
+// @require      https://raw.githubusercontent.com/MrDuckyQuack/Freecash-Progress-Percentage/refs/heads/main/settings.js
 // ==/UserScript==
 
 (function () {
