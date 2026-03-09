@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-Loading
-// @version      1.9.0
+// @version      1.9.2
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -165,36 +165,57 @@
   let hasShownInitial = false;
   let modalObserver = null;
   let lastUrl = window.location.href;
+  let lastPath = window.location.pathname; // Track last path for navigation comparisons
 
   // Function to check if duck Loading is enabled
   function isDuckLoadingEnabled() {
-    // Check window.userConfig first
     if (window.userConfig && window.userConfig.showDuckLoading !== undefined) {
       return window.userConfig.showDuckLoading === true;
     }
-    
-    // Check localStorage directly as fallback
     try {
       const saved = localStorage.getItem('fc-ducky-config');
       if (saved) {
         const config = JSON.parse(saved);
-        return config.showDuckLoading !== false; // Default to true if not set
+        return config.showDuckLoading !== false;
       }
     } catch (e) {
       console.log('Error reading config:', e);
     }
-    
-    // Default to enabled
     return true;
   }
 
+  // ========== FUNCTION TO CHECK IGNORED NAVIGATIONS ==========
+  function shouldIgnoreNavigation() {
+    const currentPath = window.location.pathname;
+    const previousPath = lastPath; // Use the tracked last path
+
+    // Define the paths
+    const offersGamePath = '/offers/game';
+    const earnPath = '/earn';
+    const offerPathPattern = /^\/offer\//; // Matches any /offer/... path
+
+    // Case 1: /offers/game <--> /offer/
+    if ((previousPath === offersGamePath && offerPathPattern.test(currentPath)) ||
+        (offerPathPattern.test(previousPath) && currentPath === offersGamePath)) {
+        console.log('🦆 Ignoring navigation: Between /offers/game and /offer/');
+        return true;
+    }
+
+    // Case 2: /earn <--> /offer/
+    if ((previousPath === earnPath && offerPathPattern.test(currentPath)) ||
+        (offerPathPattern.test(previousPath) && currentPath === earnPath)) {
+        console.log('🦆 Ignoring navigation: Between /earn and /offer/');
+        return true;
+    }
+
+    return false;
+  }
+
   function showDuck() {
-    // Check if duck Loading is enabled
     if (!isDuckLoadingEnabled()) {
       console.log('🦆 Duck Loading screen is disabled');
       return;
     }
-    
     if (isShowing) return;
     if (activeTimer) clearTimeout(activeTimer);
 
@@ -263,74 +284,38 @@
 
   function triggerAfterDelay() {
     if (isShowing) return;
-    // Check if enabled before triggering
     if (!isDuckLoadingEnabled()) {
       console.log('🦆 Duck Loading screen is disabled, not showing');
       return;
     }
+    // Check if this navigation should be ignored
+    if (shouldIgnoreNavigation()) {
+        return;
+    }
     setTimeout(showDuck, 10);
   }
 
-  // ========== Modal/Dialog Detection ==========
+  // ========== MODAL DETECTION ==========
   function setupModalDetection() {
-    // Common selectors for user profile modals on Freecash
     const modalSelectors = [
-      '[class*="modal"]',
-      '[class*="Modal"]',
-      '[class*="dialog"]',
-      '[class*="Dialog"]',
-      '[class*="profile"]',
-      '[class*="Profile"]',
-      '[class*="user"]',
-      '[class*="User"]',
-      '[role="dialog"]',
-      '[aria-modal="true"]'
+      '[class*="modal"]', '[class*="Modal"]', '[class*="dialog"]', '[class*="Dialog"]',
+      '[class*="profile"]', '[class*="Profile"]', '[class*="user"]', '[class*="User"]',
+      '[role="dialog"]', '[aria-modal="true"]'
     ];
 
-    // Function to check if a modal is opening/closing
-    function checkForModalChanges() {
-      // Look for any element that might be a modal
-      const modals = document.querySelectorAll(modalSelectors.join(','));
-      
-      // If we find modals that are visible
-      let modalVisible = false;
-      modals.forEach(modal => {
-        const style = window.getComputedStyle(modal);
-        if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
-          modalVisible = true;
-        }
-      });
-
-      // Also check URL changes (in case user profiles use URL routing)
-      if (window.location.href !== lastUrl) {
-        lastUrl = window.location.href;
-        if (hasShownInitial && isDuckLoadingEnabled()) triggerAfterDelay();
-      }
-
-      return modalVisible;
-    }
-
-    // Observe DOM changes to detect when modals appear/disappear
     modalObserver = new MutationObserver((mutations) => {
       let shouldShow = false;
-      
       mutations.forEach(mutation => {
-        // Check if nodes were added
         if (mutation.addedNodes.length > 0) {
           mutation.addedNodes.forEach(node => {
-            if (node.nodeType === 1) { // Element node
-              // Check if the added node or its children might be a modal
-              if (node.matches && (
-                node.matches(modalSelectors.join(',')) ||
-                node.querySelector && node.querySelector(modalSelectors.join(','))
-              )) {
+            if (node.nodeType === 1) {
+              if (node.matches && (node.matches(modalSelectors.join(',')) ||
+                  node.querySelector && node.querySelector(modalSelectors.join(',')))) {
                 shouldShow = true;
               }
             }
           });
         }
-        
-        // Check if attributes changed on potential modal elements
         if (mutation.type === 'attributes' && mutation.target.matches) {
           if (mutation.target.matches(modalSelectors.join(','))) {
             const style = window.getComputedStyle(mutation.target);
@@ -340,56 +325,37 @@
           }
         }
       });
-
       if (shouldShow && !isShowing && hasShownInitial && isDuckLoadingEnabled()) {
         triggerAfterDelay();
       }
     });
 
-    // Start observing
     modalObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
+      childList: true, subtree: true, attributes: true,
       attributeFilter: ['style', 'class', 'display', 'visibility']
     });
-
     console.log('🔍 Modal detection active');
   }
 
-  // ========== Offer Page Navigation Detection ==========
+  // ========== OFFER PAGE DETECTION ==========
   function setupOfferPageDetection() {
-    // Store the last seen offer ID to avoid duplicate triggers
     let lastOfferId = null;
-
     function checkForOfferPage() {
-      // Pattern for offer pages: /offer/(any-number-or-id)
       const offerMatch = window.location.pathname.match(/^\/offer\/([^\/]+)/);
-      
       if (offerMatch) {
         const currentOfferId = offerMatch[1];
-        // If it's a new offer page (not the same as last time)
         if (currentOfferId !== lastOfferId) {
           lastOfferId = currentOfferId;
-          if (hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
+          if (hasShownInitial && isDuckLoadingEnabled() && !isShowing && !shouldIgnoreNavigation()) {
             console.log('🦆 Offer page detected:', currentOfferId);
             triggerAfterDelay();
           }
         }
-      } else {
-        // Reset when not on an offer page
-        lastOfferId = null;
-      }
+      } else { lastOfferId = null; }
     }
-
-    // Check immediately and on URL changes
     checkForOfferPage();
-
-    // Also observe for dynamic content changes that might indicate offer load
-    const offerObserver = new MutationObserver((mutations) => {
-      // Only check if we're on an offer page but haven't triggered yet
-      if (window.location.pathname.includes('/offer/') && !isShowing) {
-        // Check if the main content area has loaded
+    const offerObserver = new MutationObserver(() => {
+      if (window.location.pathname.includes('/offer/') && !isShowing && !shouldIgnoreNavigation()) {
         const mainContent = document.querySelector('main, [class*="content"], [class*="offer"]');
         if (mainContent && mainContent.children.length > 0) {
           const currentOfferId = window.location.pathname.match(/\/offer\/([^\/]+)/)?.[1];
@@ -400,21 +366,14 @@
         }
       }
     });
-
-    // Start observing once body exists
     if (document.body) {
-      offerObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: false
-      });
+      offerObserver.observe(document.body, { childList: true, subtree: true, attributes: false });
     }
   }
 
   // Listen for config changes
   window.addEventListener('duckConfigChanged', (e) => {
     console.log('🦆 Config changed in loading.js:', e.detail);
-    // If disabled and currently showing, hide it
     if (e.detail.showDuckLoading === false && isShowing) {
       const el = document.getElementById('duck-Loading-screen');
       if (el) {
@@ -424,106 +383,91 @@
     }
   });
 
-  // Check config immediately
+  // Initialization
   if (!isDuckLoadingEnabled()) {
     console.log('🦆 Duck Loading screen is disabled on startup');
   } else if (!hasShownInitial) {
     if (document.readyState === 'complete') {
       hasShownInitial = true;
       triggerAfterDelay();
-      setupModalDetection(); // Start modal detection after initial load
-      setupOfferPageDetection(); // Start offer page detection
+      setupModalDetection();
+      setupOfferPageDetection();
     } else {
       window.addEventListener('load', () => {
         if (!hasShownInitial) {
           hasShownInitial = true;
           triggerAfterDelay();
-          setupModalDetection(); // Start modal detection after initial load
-          setupOfferPageDetection(); // Start offer page detection
+          setupModalDetection();
+          setupOfferPageDetection();
         }
       }, { once: true });
     }
   }
 
+  // History API overrides with path tracking
   const _pushState = history.pushState.bind(history);
   const _replaceState = history.replaceState.bind(history);
 
-  history.pushState = function (...args) { 
-    _pushState(...args); 
-    if (hasShownInitial && isDuckLoadingEnabled()) {
+  history.pushState = function (...args) {
+    _pushState(...args);
+    // Update lastPath before checking navigation
+    lastPath = window.location.pathname;
+    if (hasShownInitial && isDuckLoadingEnabled() && !shouldIgnoreNavigation()) {
       triggerAfterDelay();
-      // Also check for offer page after pushState
       setTimeout(() => {
-        if (window.location.pathname.includes('/offer/')) {
-          setupOfferPageDetection();
-        }
+        if (window.location.pathname.includes('/offer/')) { setupOfferPageDetection(); }
       }, 100);
     }
   };
-  
-  history.replaceState = function (...args) { 
-    _replaceState(...args); 
-    if (hasShownInitial && isDuckLoadingEnabled()) {
+
+  history.replaceState = function (...args) {
+    _replaceState(...args);
+    lastPath = window.location.pathname;
+    if (hasShownInitial && isDuckLoadingEnabled() && !shouldIgnoreNavigation()) {
       triggerAfterDelay();
-      // Also check for offer page after replaceState
       setTimeout(() => {
-        if (window.location.pathname.includes('/offer/')) {
-          setupOfferPageDetection();
-        }
+        if (window.location.pathname.includes('/offer/')) { setupOfferPageDetection(); }
       }, 100);
     }
   };
-  
-  window.addEventListener('popstate', () => { 
-    if (hasShownInitial && isDuckLoadingEnabled()) {
+
+  window.addEventListener('popstate', () => {
+    // Update lastPath for popstate as well
+    const newPath = window.location.pathname;
+    if (hasShownInitial && isDuckLoadingEnabled() && !shouldIgnoreNavigation()) {
       triggerAfterDelay();
-      // Also check for offer page after popstate
       setTimeout(() => {
-        if (window.location.pathname.includes('/offer/')) {
-          setupOfferPageDetection();
-        }
+        if (newPath.includes('/offer/')) { setupOfferPageDetection(); }
       }, 100);
     }
+    lastPath = newPath; // Update after potential trigger
   });
 
-  // Also check config periodically for the first few seconds
-  // (in case settings.js loads after loading.js)
+  // Periodic config check
   let checkCount = 0;
   const configCheck = setInterval(() => {
     checkCount++;
     if (isDuckLoadingEnabled()) {
-      // If enabled and we haven't shown yet, show it
       if (!hasShownInitial && !isShowing) {
         hasShownInitial = true;
         showDuck();
-        setupModalDetection(); // Start modal detection
-        setupOfferPageDetection(); // Start offer page detection
+        setupModalDetection();
+        setupOfferPageDetection();
       }
       clearInterval(configCheck);
-    } else if (checkCount > 20) { // Stop after 2 seconds (20 * 100ms)
-      clearInterval(configCheck);
-    }
+    } else if (checkCount > 20) { clearInterval(configCheck); }
   }, 100);
 
-  // Also monitor for clicks on user profile links/buttons
+  // Click monitoring
   document.addEventListener('click', (e) => {
-    // Check if clicked element or its parent might be a user profile link
     const target = e.target.closest('a[href*="/user/"], button[class*="profile"], [class*="avatar"], [class*="Avatar"]');
-    
-    if (target && hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
-      // Small delay to let the modal start loading
-      setTimeout(() => {
-        triggerAfterDelay();
-      }, 100);
+    if (target && hasShownInitial && isDuckLoadingEnabled() && !isShowing && !shouldIgnoreNavigation()) {
+      setTimeout(() => { triggerAfterDelay(); }, 100);
     }
-
-    // Also check for offer card clicks
     const offerTarget = e.target.closest('a[href*="/offer/"], [class*="offer"], [class*="Offer"]');
-    if (offerTarget && hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
-      setTimeout(() => {
-        triggerAfterDelay();
-      }, 100);
+    if (offerTarget && hasShownInitial && isDuckLoadingEnabled() && !isShowing && !shouldIgnoreNavigation()) {
+      setTimeout(() => { triggerAfterDelay(); }, 100);
     }
-  }, true); // Use capture phase to catch events early
+  }, true);
 
-})();
+})();a
