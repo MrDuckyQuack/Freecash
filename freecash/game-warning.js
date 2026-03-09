@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Freecash Game Warning
 // @namespace    freecash-game-warning
-// @version      1.0.1
-// @description  Shows a warning popup when clicking game offer buttons to remind users about VPN/Adblocker
+// @version      1.0.2
+// @description  Shows a warning popup on /offer/ pages to remind users about VPN/Adblocker
 // @author       DuckyQuack
-// @match        https://freecash.com/*
-// @match        https://www.freecash.com/*
+// @match        https://freecash.com/offer/*
+// @match        https://www.freecash.com/offer/*
 // @run-at       document-idle
 // @grant        GM_addStyle
 // ==/UserScript==
@@ -13,17 +13,17 @@
 (function() {
     'use strict';
 
-    // Store users who have already seen and acknowledged the warning
-    let warnedUsers = new Set();
-    
-    // Load previously warned users from localStorage
+    // Store users who have already seen and acknowledged the warning for a specific offer
+    let warnedOffers = new Set();
+
+    // Load previously warned offers from localStorage
     try {
-        const saved = localStorage.getItem('fc-warned-users');
+        const saved = localStorage.getItem('fc-warned-offers');
         if (saved) {
-            warnedUsers = new Set(JSON.parse(saved));
+            warnedOffers = new Set(JSON.parse(saved));
         }
     } catch (e) {
-        console.log('Could not load warned users');
+        console.log('Could not load warned offers');
     }
 
     // Add styles for the warning popup
@@ -178,18 +178,25 @@
         }
     `);
 
+    // Function to extract offer ID from the current page URL
+    function getCurrentOfferId() {
+        const match = window.location.pathname.match(/\/offer\/([^\/]+)/);
+        return match ? match[1] : null;
+    }
+
     // Function to check if user has already been warned for this offer
     function hasBeenWarned(offerId) {
-        return warnedUsers.has(offerId);
+        return offerId && warnedOffers.has(offerId);
     }
 
     // Function to mark user as warned for this offer
     function markAsWarned(offerId) {
-        warnedUsers.add(offerId);
+        if (!offerId) return;
+        warnedOffers.add(offerId);
         try {
-            localStorage.setItem('fc-warned-users', JSON.stringify([...warnedUsers]));
+            localStorage.setItem('fc-warned-offers', JSON.stringify([...warnedOffers]));
         } catch (e) {
-            console.log('Could not save warned users');
+            console.log('Could not save warned offers');
         }
     }
 
@@ -214,7 +221,7 @@
         modal.innerHTML = `
             <div class="fc-warning-header">
                 <span class="fc-warning-icon">⚠️</span>
-                <span class="fc-warning-title">ATTENTION USER!</span>
+                <span class="fc-warning-title">ATTENTION DUCK!</span>
             </div>
             <div class="fc-warning-content">
                 🦆 <strong>Please disable your VPN and Adblocker</strong> 🦆
@@ -225,7 +232,7 @@
                 • Adblocker is disabled for this site<br>
                 • Your browser allows tracking
                 <br><br>
-                <span style="color: #fbbf24; font-size: 16px;">⏱️ You can close the warning in:</span>
+                <span style="color: #fbbf24; font-size: 16px;">⏱️ This warning auto-closes in:</span>
             </div>
             <div class="fc-warning-timer" id="warning-timer">3</div>
             <div class="fc-warning-buttons">
@@ -249,13 +256,8 @@
         // Timer interval
         const timerInterval = setInterval(() => {
             countdown--;
-            if (timerEl) {
-                timerEl.textContent = countdown;
-            }
-            if (continueBtn) {
-                continueBtn.textContent = `Continue (${countdown}s)`;
-            }
-
+            if (timerEl) timerEl.textContent = countdown;
+            if (continueBtn) continueBtn.textContent = `Continue (${countdown}s)`;
             if (countdown <= 0) {
                 clearInterval(timerInterval);
                 if (continueBtn) {
@@ -269,24 +271,21 @@
         continueBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             clearInterval(timerInterval);
-            
+
             // Mark this offer as warned
-            if (offerId) {
-                markAsWarned(offerId);
-            }
-            
+            if (offerId) markAsWarned(offerId);
+
             // Remove overlay
             overlay.remove();
             document.body.style.overflow = '';
-            
+
             // Trigger the original click after a tiny delay
             setTimeout(() => {
                 if (originalClickHandler) {
                     originalClickHandler();
                 } else {
-                    // If no original handler, just click the element
                     offerElement.click();
                 }
             }, 50);
@@ -296,7 +295,7 @@
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             clearInterval(timerInterval);
             overlay.remove();
             document.body.style.overflow = '';
@@ -312,116 +311,62 @@
         });
     }
 
-    // Function to extract offer ID from element or its parent
-    function getOfferIdFromElement(element) {
-        // Try to find offer ID from href
-        const offerLink = element.closest('a[href*="/offer/"]');
-        if (offerLink) {
-            const match = offerLink.href.match(/\/offer\/([^\/]+)/);
-            if (match) return match[1];
-        }
-        
-        // Try to find offer ID from data attribute
-        if (element.dataset.offerId) return element.dataset.offerId;
-        
-        // Generate a unique ID based on element's position/text
-        return 'offer_' + Math.random().toString(36).substr(2, 9);
-    }
+    // Function to setup warning on the /offer/ page
+    function setupOfferPageWarning() {
+        const currentOfferId = getCurrentOfferId();
 
-    // Main function to setup warning on game buttons
-    function setupGameWarning() {
-        // Look for the specific button pattern from the HTML you provided
-        const gameButtonSelector = '.chakra-button.css-1wilzt8, button[class*="chakra-button"], button:has(svg.chakra-icon), a[href*="/offer/"] button';
-        
-        // Also look for buttons that contain "Spielen" or "Play" text
-        const playButtonSelector = 'button:contains("Spielen"), button:contains("Play"), button:contains("Start"), a:contains("Spielen")';
-        
-        // Intercept clicks on game buttons
+        // Selector for the main play button (based on the HTML you provided)
+        const playButtonSelector = '.chakra-button.css-1wilzt8, button[class*="chakra-button"], button:has(svg.chakra-icon)';
+
+        // Intercept clicks on the play button
         document.addEventListener('click', (e) => {
-            // Find if clicked element is or is inside a game button
-            const gameButton = e.target.closest(gameButtonSelector) || e.target.closest(playButtonSelector);
-            
-            if (gameButton && !e.defaultPrevented) {
-                // Get offer ID
-                const offerId = getOfferIdFromElement(gameButton);
-                
-                // Check if user has already been warned for this offer
-                if (!hasBeenWarned(offerId)) {
-                    // Prevent default action
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    
-                    // Store original click handler reference
-                    let originalHandler = () => {
-                        // Simulate a click without our interception
-                        const newClick = new MouseEvent('click', {
-                            view: window,
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        
-                        // Remove our listener temporarily
-                        document.removeEventListener('click', setupGameWarning, true);
-                        gameButton.dispatchEvent(newClick);
-                        document.addEventListener('click', setupGameWarning, true);
-                    };
-                    
-                    // Show warning
-                    showWarning(gameButton, offerId, originalHandler);
-                }
+            const playButton = e.target.closest(playButtonSelector);
+
+            // Only trigger if we're on an offer page, the button is clicked, and user hasn't been warned for THIS offer
+            if (playButton && currentOfferId && !hasBeenWarned(currentOfferId) && !e.defaultPrevented) {
+
+                // Prevent default action
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                // Store original click handler reference
+                let originalHandler = () => {
+                    const newClick = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
+                    document.removeEventListener('click', setupOfferPageWarning, true);
+                    playButton.dispatchEvent(newClick);
+                    document.addEventListener('click', setupOfferPageWarning, true);
+                };
+
+                // Show warning
+                showWarning(playButton, currentOfferId, originalHandler);
             }
-        }, true); // Use capture phase to intercept early
+        }, true); // Use capture phase
     }
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupGameWarning);
+        document.addEventListener('DOMContentLoaded', setupOfferPageWarning);
     } else {
-        setupGameWarning();
+        setupOfferPageWarning();
     }
 
-    // Also watch for dynamically added buttons
+    // Watch for dynamically loaded content on the offer page
     const observer = new MutationObserver((mutations) => {
-        // Check if any new game buttons were added
-        for (const mutation of mutations) {
-            if (mutation.addedNodes.length > 0) {
-                // Our click handler will catch them automatically
-                break;
-            }
+        // Check if the main button has been added to the page
+        const playButton = document.querySelector('.chakra-button.css-1wilzt8, button[class*="chakra-button"]');
+        if (playButton) {
+            // Our click handler is already set up, nothing more needed
         }
     });
 
-    // Start observing when body exists
     if (document.body) {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        observer.observe(document.body, { childList: true, subtree: true });
     } else {
         window.addEventListener('DOMContentLoaded', () => {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
+            observer.observe(document.body, { childList: true, subtree: true });
         });
     }
 
-    // Helper function for :contains selector (since it's not native)
-    function containsSelector(selector) {
-        const elements = document.querySelectorAll(selector.split(':contains(')[0]);
-        const text = selector.match(/:contains\("?([^")]+)"?\)/)[1].toLowerCase();
-        return Array.from(elements).filter(el => el.textContent.toLowerCase().includes(text));
-    }
-
-    // Override querySelectorAll to support :contains
-    const originalQuerySelectorAll = document.querySelectorAll;
-    document.querySelectorAll = function(selector) {
-        if (selector.includes(':contains(')) {
-            return containsSelector(selector);
-        }
-        return originalQuerySelectorAll.call(this, selector);
-    };
-
-    console.log('🦆 Game warning script loaded - will remind users to disable VPN/Adblocker');
+    console.log('🦆 Game warning script loaded for /offer/ pages');
 })();
