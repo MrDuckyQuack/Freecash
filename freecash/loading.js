@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-Loading
-// @version      1.7.2
+// @version      1.9.0
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -163,6 +163,8 @@
   let activeTimer = null;
   let isShowing = false;
   let hasShownInitial = false;
+  let modalObserver = null;
+  let lastUrl = window.location.href;
 
   // Function to check if duck Loading is enabled
   function isDuckLoadingEnabled() {
@@ -269,6 +271,146 @@
     setTimeout(showDuck, 10);
   }
 
+  // ========== Modal/Dialog Detection ==========
+  function setupModalDetection() {
+    // Common selectors for user profile modals on Freecash
+    const modalSelectors = [
+      '[class*="modal"]',
+      '[class*="Modal"]',
+      '[class*="dialog"]',
+      '[class*="Dialog"]',
+      '[class*="profile"]',
+      '[class*="Profile"]',
+      '[class*="user"]',
+      '[class*="User"]',
+      '[role="dialog"]',
+      '[aria-modal="true"]'
+    ];
+
+    // Function to check if a modal is opening/closing
+    function checkForModalChanges() {
+      // Look for any element that might be a modal
+      const modals = document.querySelectorAll(modalSelectors.join(','));
+      
+      // If we find modals that are visible
+      let modalVisible = false;
+      modals.forEach(modal => {
+        const style = window.getComputedStyle(modal);
+        if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+          modalVisible = true;
+        }
+      });
+
+      // Also check URL changes (in case user profiles use URL routing)
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        if (hasShownInitial && isDuckLoadingEnabled()) triggerAfterDelay();
+      }
+
+      return modalVisible;
+    }
+
+    // Observe DOM changes to detect when modals appear/disappear
+    modalObserver = new MutationObserver((mutations) => {
+      let shouldShow = false;
+      
+      mutations.forEach(mutation => {
+        // Check if nodes were added
+        if (mutation.addedNodes.length > 0) {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === 1) { // Element node
+              // Check if the added node or its children might be a modal
+              if (node.matches && (
+                node.matches(modalSelectors.join(',')) ||
+                node.querySelector && node.querySelector(modalSelectors.join(','))
+              )) {
+                shouldShow = true;
+              }
+            }
+          });
+        }
+        
+        // Check if attributes changed on potential modal elements
+        if (mutation.type === 'attributes' && mutation.target.matches) {
+          if (mutation.target.matches(modalSelectors.join(','))) {
+            const style = window.getComputedStyle(mutation.target);
+            if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+              shouldShow = true;
+            }
+          }
+        }
+      });
+
+      if (shouldShow && !isShowing && hasShownInitial && isDuckLoadingEnabled()) {
+        triggerAfterDelay();
+      }
+    });
+
+    // Start observing
+    modalObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class', 'display', 'visibility']
+    });
+
+    console.log('🔍 Modal detection active');
+  }
+
+  // ========== Offer Page Navigation Detection ==========
+  function setupOfferPageDetection() {
+    // Store the last seen offer ID to avoid duplicate triggers
+    let lastOfferId = null;
+
+    function checkForOfferPage() {
+      // Pattern for offer pages: /offer/(any-number-or-id)
+      const offerMatch = window.location.pathname.match(/^\/offer\/([^\/]+)/);
+      
+      if (offerMatch) {
+        const currentOfferId = offerMatch[1];
+        // If it's a new offer page (not the same as last time)
+        if (currentOfferId !== lastOfferId) {
+          lastOfferId = currentOfferId;
+          if (hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
+            console.log('🦆 Offer page detected:', currentOfferId);
+            triggerAfterDelay();
+          }
+        }
+      } else {
+        // Reset when not on an offer page
+        lastOfferId = null;
+      }
+    }
+
+    // Check immediately and on URL changes
+    checkForOfferPage();
+
+    // Also observe for dynamic content changes that might indicate offer load
+    const offerObserver = new MutationObserver((mutations) => {
+      // Only check if we're on an offer page but haven't triggered yet
+      if (window.location.pathname.includes('/offer/') && !isShowing) {
+        // Check if the main content area has loaded
+        const mainContent = document.querySelector('main, [class*="content"], [class*="offer"]');
+        if (mainContent && mainContent.children.length > 0) {
+          const currentOfferId = window.location.pathname.match(/\/offer\/([^\/]+)/)?.[1];
+          if (currentOfferId && currentOfferId !== lastOfferId) {
+            lastOfferId = currentOfferId;
+            triggerAfterDelay();
+          }
+        }
+      }
+    });
+
+    // Start observing once body exists
+    if (document.body) {
+      offerObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: false
+      });
+    }
+  }
+
   // Listen for config changes
   window.addEventListener('duckConfigChanged', (e) => {
     console.log('🦆 Config changed in loading.js:', e.detail);
@@ -289,11 +431,15 @@
     if (document.readyState === 'complete') {
       hasShownInitial = true;
       triggerAfterDelay();
+      setupModalDetection(); // Start modal detection after initial load
+      setupOfferPageDetection(); // Start offer page detection
     } else {
       window.addEventListener('load', () => {
         if (!hasShownInitial) {
           hasShownInitial = true;
           triggerAfterDelay();
+          setupModalDetection(); // Start modal detection after initial load
+          setupOfferPageDetection(); // Start offer page detection
         }
       }, { once: true });
     }
@@ -304,16 +450,40 @@
 
   history.pushState = function (...args) { 
     _pushState(...args); 
-    if (hasShownInitial && isDuckLoadingEnabled()) triggerAfterDelay(); 
+    if (hasShownInitial && isDuckLoadingEnabled()) {
+      triggerAfterDelay();
+      // Also check for offer page after pushState
+      setTimeout(() => {
+        if (window.location.pathname.includes('/offer/')) {
+          setupOfferPageDetection();
+        }
+      }, 100);
+    }
   };
   
   history.replaceState = function (...args) { 
     _replaceState(...args); 
-    if (hasShownInitial && isDuckLoadingEnabled()) triggerAfterDelay(); 
+    if (hasShownInitial && isDuckLoadingEnabled()) {
+      triggerAfterDelay();
+      // Also check for offer page after replaceState
+      setTimeout(() => {
+        if (window.location.pathname.includes('/offer/')) {
+          setupOfferPageDetection();
+        }
+      }, 100);
+    }
   };
   
   window.addEventListener('popstate', () => { 
-    if (hasShownInitial && isDuckLoadingEnabled()) triggerAfterDelay(); 
+    if (hasShownInitial && isDuckLoadingEnabled()) {
+      triggerAfterDelay();
+      // Also check for offer page after popstate
+      setTimeout(() => {
+        if (window.location.pathname.includes('/offer/')) {
+          setupOfferPageDetection();
+        }
+      }, 100);
+    }
   });
 
   // Also check config periodically for the first few seconds
@@ -326,11 +496,34 @@
       if (!hasShownInitial && !isShowing) {
         hasShownInitial = true;
         showDuck();
+        setupModalDetection(); // Start modal detection
+        setupOfferPageDetection(); // Start offer page detection
       }
       clearInterval(configCheck);
     } else if (checkCount > 20) { // Stop after 2 seconds (20 * 100ms)
       clearInterval(configCheck);
     }
   }, 100);
+
+  // Also monitor for clicks on user profile links/buttons
+  document.addEventListener('click', (e) => {
+    // Check if clicked element or its parent might be a user profile link
+    const target = e.target.closest('a[href*="/user/"], button[class*="profile"], [class*="avatar"], [class*="Avatar"]');
+    
+    if (target && hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
+      // Small delay to let the modal start loading
+      setTimeout(() => {
+        triggerAfterDelay();
+      }, 100);
+    }
+
+    // Also check for offer card clicks
+    const offerTarget = e.target.closest('a[href*="/offer/"], [class*="offer"], [class*="Offer"]');
+    if (offerTarget && hasShownInitial && isDuckLoadingEnabled() && !isShowing) {
+      setTimeout(() => {
+        triggerAfterDelay();
+      }, 100);
+    }
+  }, true); // Use capture phase to catch events early
 
 })();
