@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.6
+// @version      1.7.7
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -406,8 +406,10 @@
   right: 0;
   bottom: 0;
   background-color: #4b5563;
-  border-radius: 24px;
+  border-radius: 30px; /* Increased for more rounded appearance */
   transition: background-color 0.25s ease;
+  /* Optional: add a subtle inner shadow for depth */
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .fc-toggle-slider::before {
@@ -418,8 +420,10 @@
   left: 3px;
   top: 3px;
   background: white;
-  border-radius: 50%;
+  border-radius: 50%; /* This is already rounded like a ball */
   transition: transform 0.25s ease;
+  /* Optional: add a subtle shadow to make the ball pop */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .fc-toggle input:checked + .fc-toggle-slider {
