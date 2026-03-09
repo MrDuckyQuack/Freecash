@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Progress Settings UI
 // @namespace    freecash-settings-ui
-// @version      1.7.5
+// @version      1.7.6
 // @description  Settings UI for Freecash Progress Script with auto-save
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -413,11 +413,11 @@
 .fc-toggle-slider::before {
   content: "";
   position: absolute;
-  height: 18px;
   width: 18px;
+  height: 18px;
   left: 3px;
-  bottom: 3px;
-  background-color: white;
+  top: 3px;
+  background: white;
   border-radius: 50%;
   transition: transform 0.25s ease;
 }
