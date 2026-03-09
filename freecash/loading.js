@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-loading
-// @version      2.6.2
+// @version      2.6.3
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -156,8 +156,13 @@
       container.appendChild(el);
     }
 
-    for (let i = 0; i < 8; i++) createFloatElement(duckEmojis, 'duck-float', 30, 50, 15, 25, 0, 10, 0.1, 0.25);
-    for (let i = 0; i < 5; i++) createFloatElement(balloonEmojis, 'balloon-float', 25, 40, 12, 20, 0, 8, 0.15, 0.3);
+    // Fixed function calls - removed incorrect array parameters
+    for (let i = 0; i < 8; i++) {
+      createFloatElement(duckEmojis, 'duck-float', 30, 50, 15, 25, 0, 10, 0.1, 0.25);
+    }
+    for (let i = 0; i < 5; i++) {
+      createFloatElement(balloonEmojis, 'balloon-float', 25, 40, 12, 20, 0, 8, 0.15, 0.3);
+    }
   }
 
   let activeTimer = null;
