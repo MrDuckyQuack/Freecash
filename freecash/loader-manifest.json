@@ -2,6 +2,7 @@
   "scripts": [
     "loading.js",
     "main.js",
+    "game-warning.js",
     "settings.js",
     "progress.js",
     "easteregg.js"
