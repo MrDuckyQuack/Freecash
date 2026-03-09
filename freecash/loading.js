@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-Loading
-// @version      2.0.1
+// @version      2.0.2
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
