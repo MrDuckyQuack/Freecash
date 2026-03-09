@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-Loading
-// @version      2.0.1
+// @version      2.0.3
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -165,7 +165,7 @@
   let hasShownInitial = false;
   let modalObserver = null;
   let lastUrl = window.location.href;
-  let previousPath = window.location.pathname; // Store the previous path separately
+  let previousPath = window.location.pathname; // Store the previous path
   let navigationInProgress = false;
 
   // Function to check if duck Loading is enabled
@@ -191,20 +191,24 @@
     const earnPath = '/earn';
     const offerPathPattern = /^\/offer\//;
 
+    // Log what we're checking for debugging
+    console.log(`🦆 Checking navigation: ${fromPath || 'initial'} → ${toPath}`);
+
     // Case 1: /offers/game <--> /offer/
     if ((fromPath === offersGamePath && offerPathPattern.test(toPath)) ||
         (offerPathPattern.test(fromPath) && toPath === offersGamePath)) {
-        console.log('🦆 Ignoring navigation: Between /offers/game and /offer/');
+        console.log('🦆 ✓ Ignoring: Between /offers/game and /offer/');
         return true;
     }
 
     // Case 2: /earn <--> /offer/
     if ((fromPath === earnPath && offerPathPattern.test(toPath)) ||
         (offerPathPattern.test(fromPath) && toPath === earnPath)) {
-        console.log('🦆 Ignoring navigation: Between /earn and /offer/');
+        console.log('🦆 ✓ Ignoring: Between /earn and /offer/');
         return true;
     }
 
+    console.log('🦆 ✗ Not ignoring this navigation');
     return false;
   }
 
@@ -292,10 +296,8 @@
     
     const currentPath = window.location.pathname;
     
-    // Check if this navigation should be ignored
+    // Check if this navigation should be ignored (using stored previousPath)
     if (shouldIgnoreNavigation(previousPath, currentPath)) {
-        console.log('🦆 Navigation ignored, updating previousPath without showing');
-        previousPath = currentPath; // Still update the path
         return;
     }
     
@@ -312,21 +314,23 @@
     ];
 
     modalObserver = new MutationObserver((mutations) => {
+      // Check for URL changes first
       if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
         triggerAfterDelay();
         return;
       }
       
+      // Then check for modals
       let shouldShow = false;
       mutations.forEach(mutation => {
         if (mutation.addedNodes.length > 0) {
           mutation.addedNodes.forEach(node => {
             if (node.nodeType === 1) {
-              const style = window.getComputedStyle(node);
-              if (style.position === 'fixed' || style.position === 'absolute') {
-                const zIndex = parseInt(style.zIndex);
-                if (zIndex > 1000) {
+              // Check if it's a modal-like element
+              if (node.matches && node.matches(modalSelectors.join(','))) {
+                const style = window.getComputedStyle(node);
+                if (style.display !== 'none' && style.visibility !== 'hidden') {
                   shouldShow = true;
                 }
               }
@@ -365,7 +369,9 @@
             }
           }
         }
-      } else { lastOfferId = null; }
+      } else { 
+        lastOfferId = null; 
+      }
     }
     checkForOfferPage();
   }
@@ -410,14 +416,14 @@
     }
   }
 
-  // History API overrides with proper path tracking
+  // ========== HISTORY API OVERRIDES WITH PROPER PATH TRACKING ==========
   const _pushState = history.pushState.bind(history);
   const _replaceState = history.replaceState.bind(history);
 
   history.pushState = function (...args) {
-    const beforePath = window.location.pathname; // Path before pushState
+    const beforePath = window.location.pathname; // Path before navigation
     _pushState(...args);
-    const afterPath = window.location.pathname;  // Path after pushState
+    const afterPath = window.location.pathname;  // Path after navigation
     
     if (hasShownInitial && isDuckLoadingEnabled()) {
       // Check if we should ignore this navigation
@@ -427,7 +433,8 @@
         console.log('🦆 PushState navigation ignored');
       }
     }
-    previousPath = afterPath; // Update previousPath after navigation
+    // IMPORTANT: Update previousPath to the new path AFTER the check
+    previousPath = afterPath;
   };
 
   history.replaceState = function (...args) {
@@ -446,7 +453,7 @@
   };
 
   window.addEventListener('popstate', () => {
-    const beforePath = previousPath;
+    const beforePath = previousPath; // Use the stored previous path
     const afterPath = window.location.pathname;
     
     if (hasShownInitial && isDuckLoadingEnabled()) {
@@ -459,16 +466,15 @@
     previousPath = afterPath;
   });
 
-  // Also track clicks on regular links
+  // Track link clicks for better navigation detection
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
     if (link && link.href && link.href.startsWith(window.location.origin)) {
       const beforePath = window.location.pathname;
       const afterPath = new URL(link.href).pathname;
       
-      // Store that we're about to navigate
+      // If this navigation should be ignored, don't set navigation flag
       if (!shouldIgnoreNavigation(beforePath, afterPath)) {
-        // Will be caught by pushState/popstate, but we can pre-emptively set navigation flag
         navigationInProgress = true;
       }
     }
@@ -489,7 +495,9 @@
         setupOfferPageDetection();
       }
       clearInterval(configCheck);
-    } else if (checkCount > 20) { clearInterval(configCheck); }
+    } else if (checkCount > 20) { 
+      clearInterval(configCheck); 
+    }
   }, 100);
 
 })();
