@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freecash Duck Loading
 // @namespace    freecash-duck-Loading
-// @version      1.7.1
+// @version      1.7.2
 // @description  Shows a cute duck loading screen on Freecash with animated floating ducks and balloons
 // @author       DuckyQuack
 // @match        https://freecash.com/*
@@ -14,7 +14,7 @@
   'use strict';
 
   const duckMessages = [
-    "WELCOME TO DUCKCASH!",
+    "WELCOME TO FREECASH!",
     "DUCKYQUACK WAS HERE",
     "QUACK QUACK!",
     "READY TO EARN?",
